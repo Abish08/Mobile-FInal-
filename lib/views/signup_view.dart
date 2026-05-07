@@ -263,6 +263,11 @@ class _SignupViewState extends State<SignupView> {
                       child: ElevatedButton(
                         onPressed: _agreeToTerms
                             ? () {
+                              //Navigate to Loginpage after register
+                              Navigator.pushReplacement(context,
+                               MaterialPageRoute(builder:(context) => const LoginView(),
+                               ),
+                               );
                                 // TODO: Add signup logic
                               }
                             : null,
