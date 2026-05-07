@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nutri_nepal/views/dashboard_view.dart';
 import 'package:nutri_nepal/views/signup_view.dart';
 
 class LoginView extends StatefulWidget {
@@ -140,14 +141,47 @@ class _LoginViewState extends State<LoginView> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {},
-                      child: const Text('Login'),
+                  // SizedBox(
+                  //   width: double.infinity,
+                  //   child: ElevatedButton(
+                  //     onPressed: () {},
+                  //     child: const Text('Login'),
                     
-                    ),
-                  ),
+                  //   ),
+                  // ),
+                  SizedBox(
+  width: double.infinity,
+  child: ElevatedButton(
+    onPressed: () {
+      // Navigate to Dashboard
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const DashboardView()
+        ),
+      );
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: const Color(0xFFB85C00),
+      foregroundColor: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+    child: const Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Login',
+          style: TextStyle(fontSize: 16),
+        ),
+        SizedBox(width: 8),
+        Icon(Icons.arrow_forward, size: 18),
+      ],
+    ),
+  ),
+),
                 ],
               ),
             ),
