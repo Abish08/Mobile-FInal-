@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nutri_nepal/views/login_view.dart';
+import 'package:nutri_nepal/screen/login_screen.dart';
 
 class OnboardingView extends StatefulWidget {
   const OnboardingView ({super.key});
@@ -153,4 +153,3 @@ class _OnboardingViewState extends State<OnboardingView> {
     );
   }
 }
-

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nutri_nepal/views/splash_view.dart';
+import 'package:nutri_nepal/theme/theme.dart';
+import 'package:nutri_nepal/screen/splash_screen.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -9,10 +10,7 @@ class App extends StatelessWidget {
     return MaterialApp(
       title: 'NutriNepal',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1B4332)),
-          useMaterial3: true,
-      ),
+      theme: AppTheme.lightTheme,
       home: const SplashView(),
     );
   }

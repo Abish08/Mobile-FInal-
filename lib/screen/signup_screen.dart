@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nutri_nepal/views/login_view.dart';
+import 'package:nutri_nepal/screen/login_screen.dart';
+
 class SignupView extends StatefulWidget {
   const SignupView({super.key});
 
