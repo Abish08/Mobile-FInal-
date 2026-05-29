@@ -10,9 +10,8 @@ class DashboardView extends StatefulWidget {
 class _DashboardViewState extends State<DashboardView> {
   int _selectedIndex = 0;
 
-  // List of screens for bottom navigation
   final List<Widget> _screens = [
-    const HomeScreen(), // ✅ We're building this now
+    const HomeScreen(),
     const Center(child: Text('Meals Screen', style: TextStyle(fontSize: 24))),
     const Center(child: Text('Workouts Screen', style: TextStyle(fontSize: 24))),
     const Center(child: Text('Log Screen', style: TextStyle(fontSize: 24))),
@@ -20,9 +19,7 @@ class _DashboardViewState extends State<DashboardView> {
   ];
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
   }
 
   @override
@@ -49,60 +46,45 @@ class _DashboardViewState extends State<DashboardView> {
   }
 }
 
-// ✅ HOME SCREEN -  HEADER & GREETING
+//HomeScreen
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Light background from theme
+      backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // HEADER ROW
+              // 1️ HEADER
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Greeting Text
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
                       Text(
-                        'Namaste, Abish',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Montserrat',
-                        ),
+                        'Namaste, Arpan',
+                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Montserrat'),
                       ),
                       SizedBox(height: 4),
                       Text(
                         "You're 62% towards your goal today",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF6B7280),
-                          fontFamily: 'OpenSans',
-                        ),
+                        style: TextStyle(fontSize: 14, color: Color(0xFF6B7280), fontFamily: 'OpenSans'),
                       ),
                     ],
                   ),
-                  
-                  // Notification Icon Card
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
+                        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2)),
                       ],
                     ),
                     child: const Icon(Icons.notifications_outlined, size: 24),
@@ -110,11 +92,80 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
-              
-              
+
+              // 2️ BMI CARD
+              _buildBmiCard(),
+
+              const SizedBox(height: 16),
+              // ✅ Next step will replace this placeholder
+              const Center(child: Text('Next: Daily Calories Card', style: TextStyle(color: Colors.grey))),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // BMI CARD WIDGET
+  Widget _buildBmiCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              Text(
+                'YOUR BODY MASS INDEX',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF6B7280), fontFamily: 'Montserrat'),
+              ),
+              Text(
+                '22.4',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1F2937), fontFamily: 'Montserrat'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Stack(
+            children: [
+              Container(
+                height: 8,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4CAF50), Color(0xFF8BC34A), Color(0xFFFFC107), Color(0xFFF44336)],
+                  ),
+                ),
+              ),
+              const Positioned(
+                left: 120,
+                child: CircleAvatar(
+                  radius: 8,
+                  backgroundColor: Colors.white,
+                  child: CircleAvatar(radius: 6, backgroundColor: Color(0xFF1F2937)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              Text('Under', style: TextStyle(fontSize: 10, color: Color(0xFF6B7280))),
+              Text('Normal', style: TextStyle(fontSize: 10, color: Color(0xFF6B7280))),
+              Text('Over', style: TextStyle(fontSize: 10, color: Color(0xFF6B7280))),
+              Text('Obese', style: TextStyle(fontSize: 10, color: Color(0xFF6B7280))),
+            ],
+          ),
+        ],
       ),
     );
   }
