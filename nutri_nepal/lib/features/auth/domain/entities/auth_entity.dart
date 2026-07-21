@@ -7,6 +7,16 @@ class AuthEntity extends Equatable {
   final String email;
   final String phone;
   final String password;
+  
+  // ✅ THIS IS THE MISSING FIELD
+  final String? profilePicture; 
+  
+  final int? age;
+  final double? weight;
+  final double? height;
+  final String? gender;
+  final String? fitnessGoal;
+  final List<String>? healthConditions;
 
   const AuthEntity({
     this.userId,
@@ -15,6 +25,13 @@ class AuthEntity extends Equatable {
     required this.email,
     required this.phone,
     required this.password,
+    this.profilePicture, // ✅ MUST BE HERE
+    this.age,
+    this.weight,
+    this.height,
+    this.gender,
+    this.fitnessGoal,
+    this.healthConditions,
   });
 
   String get displayName => '$firstName $lastName'.trim();
@@ -27,5 +44,12 @@ class AuthEntity extends Equatable {
         email,
         phone,
         password,
+        profilePicture, // ✅ MUST BE HERE
+        age,
+        weight,
+        height,
+        gender,
+        fitnessGoal,
+        healthConditions,
       ];
 }

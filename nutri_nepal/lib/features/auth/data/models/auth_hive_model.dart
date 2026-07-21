@@ -7,26 +7,20 @@ part 'auth_hive_model.g.dart';
 
 @HiveType(typeId: HiveTableConstant.userTypeId)
 class AuthHiveModel extends HiveObject {
-  @HiveField(0)
-  final String userId;
-
-  @HiveField(1)
-  final String firstName;
-
-  @HiveField(2)
-  final String lastName;
-
-  @HiveField(3)
-  final String phone;
-
-  @HiveField(4)
-  final String email;
-
-  @HiveField(5)
-  final String password;
-
-  @HiveField(6)
-  final String profilePicture;
+  @HiveField(0) final String userId;
+  @HiveField(1) final String firstName;
+  @HiveField(2) final String lastName;
+  @HiveField(3) final String phone;
+  @HiveField(4) final String email;
+  @HiveField(5) final String password;
+  @HiveField(6) final String profilePicture;
+  
+  @HiveField(7) final int? age;
+  @HiveField(8) final double? weight;
+  @HiveField(9) final double? height;
+  @HiveField(10) final String? gender;
+  @HiveField(11) final String? fitnessGoal;
+  @HiveField(12) final List<String>? healthConditions;
 
   AuthHiveModel({
     String? userId,
@@ -36,23 +30,34 @@ class AuthHiveModel extends HiveObject {
     required this.email,
     required this.password,
     this.profilePicture = 'default-profile.png',
+    this.age,
+    this.weight,
+    this.height,
+    this.gender,
+    this.fitnessGoal,
+    this.healthConditions,
   }) : userId = userId ?? const Uuid().v4();
 
-  // Convert from API response (backend JSON)
   factory AuthHiveModel.fromJson(Map<String, dynamic> json) {
-    final nameParts = (json['firstName'] ?? '').split(' ');
     return AuthHiveModel(
       userId: json['_id'] ?? json['id'] ?? '',
-      firstName: nameParts.isNotEmpty ? nameParts[0] : '',
-      lastName: nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '',
+      firstName: json['firstName'] ?? '',
+      lastName: json['lastName'] ?? '',
       email: json['email'] ?? '',
       phone: json['phone'] ?? '',
-      password: '', // Don't store password from API
+      password: '',
       profilePicture: json['profilePicture'] ?? 'default-profile.png',
+      age: json['age'],
+      weight: (json['weight'] as num?)?.toDouble(),
+      height: (json['height'] as num?)?.toDouble(),
+      gender: json['gender'],
+      fitnessGoal: json['fitnessGoal'],
+      healthConditions: json['healthConditions'] != null
+          ? List<String>.from(json['healthConditions'])
+          : [],
     );
   }
 
-  // Convert to API request (for registration)
   Map<String, dynamic> toJson() {
     return {
       'firstName': firstName,
@@ -60,10 +65,10 @@ class AuthHiveModel extends HiveObject {
       'email': email,
       'phone': phone,
       'password': password,
+      'profilePicture': profilePicture,
     };
   }
 
-  // Convert from Entity
   factory AuthHiveModel.fromEntity(AuthEntity entity) {
     return AuthHiveModel(
       userId: entity.userId ?? const Uuid().v4(),
@@ -72,10 +77,17 @@ class AuthHiveModel extends HiveObject {
       phone: entity.phone,
       email: entity.email,
       password: entity.password,
+      // ✅ FIX: Provide default value if null
+      profilePicture: entity.profilePicture ?? 'default-profile.png',
+      age: entity.age,
+      weight: entity.weight,
+      height: entity.height,
+      gender: entity.gender,
+      fitnessGoal: entity.fitnessGoal,
+      healthConditions: entity.healthConditions,
     );
   }
 
-  // Convert to Entity
   AuthEntity toEntity() {
     return AuthEntity(
       userId: userId,
@@ -84,6 +96,13 @@ class AuthHiveModel extends HiveObject {
       phone: phone,
       email: email,
       password: password,
+      profilePicture: profilePicture,
+      age: age,
+      weight: weight,
+      height: height,
+      gender: gender,
+      fitnessGoal: fitnessGoal,
+      healthConditions: healthConditions,
     );
   }
 }
