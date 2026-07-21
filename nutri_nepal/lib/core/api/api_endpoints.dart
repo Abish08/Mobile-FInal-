@@ -1,9 +1,7 @@
 class ApiEndpoints {
   // For physical device (your OPPO phone)
-  static const String baseUrl = 'http://192.168.101.10:3000/api/v1';
-  
-  // For Android emulator, use:
-  // static const String baseUrl = 'http://10.0.2.2:3000/api/v1';
+  // NOTE: Update this IP if it changes (check with: ipconfig)
+static const String baseUrl = 'http://192.168.101.2:3000/api/v1'; // static const String baseUrl = 'http://10.0.2.2:3000/api/v1';
   
   // Auth Endpoints
   static const String register = '/users/register';
