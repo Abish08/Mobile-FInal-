@@ -1,11 +1,133 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:nutri_nepal/core/api/api_client.dart';
+import 'package:nutri_nepal/core/services/image_upload_service.dart';
 import 'package:nutri_nepal/features/auth/presentation/pages/login_screen.dart';
+import 'package:nutri_nepal/features/auth/presentation/view_model/auth_viewmodel.dart';
 
-class UserProfileScreen extends StatelessWidget {
+class UserProfileScreen extends ConsumerStatefulWidget {
   const UserProfileScreen({super.key});
 
   @override
+  ConsumerState<UserProfileScreen> createState() => _UserProfileScreenState();
+}
+
+class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
+  final ImageUploadService _imageUploadService = ImageUploadService();
+  File? _profileImage;
+  bool _isUploading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Fetch fresh user data when profile screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authViewModelProvider.notifier).getCurrentUser();
+    });
+  }
+
+  Future<void> _pickAndUploadImage(ImageSource source) async {
+    setState(() => _isUploading = true);
+
+    File? imageFile;
+    if (source == ImageSource.gallery) {
+      imageFile = await _imageUploadService.pickImageFromGallery();
+    } else {
+      imageFile = await _imageUploadService.pickImageFromCamera();
+    }
+
+    if (imageFile != null) {
+      setState(() {
+        _profileImage = imageFile;
+      });
+
+      final uploadedUrl = await _imageUploadService.uploadProfilePicture(imageFile);
+
+      if (uploadedUrl != null) {
+        await _updateUserProfileWithImageUrl(uploadedUrl);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to upload image'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+
+    if (mounted) {
+      setState(() => _isUploading = false);
+    }
+  }
+
+  Future<void> _updateUserProfileWithImageUrl(String imageUrl) async {
+    try {
+      final apiClient = ApiClient();
+      
+      final response = await apiClient.dio.patch(
+        '/users/profile',
+        data: {
+          'profilePicture': imageUrl,
+        },
+      );
+
+      if (response.statusCode == 200 && mounted) {
+        // ✅ Refresh user data after updating profile picture
+        await ref.read(authViewModelProvider.notifier).getCurrentUser();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated successfully!'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save profile picture: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Color(0xFF1B4332)),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Color(0xFF1B4332)),
+                title: const Text('Take a Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadImage(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authViewModelProvider);
+    final user = authState.user;
+
+    if (user == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -31,24 +153,72 @@ class UserProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Profile Header
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1B4332).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.local_florist,
-                size: 50,
-                color: Color(0xFF1B4332),
+            // Profile Image with Upload
+            GestureDetector(
+              onTap: _isUploading ? null : _showImageSourceDialog,
+              child: Stack(
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1B4332).withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      // ✅ Load saved image from user.profilePicture
+                      image: _profileImage != null
+                          ? DecorationImage(
+                              image: FileImage(_profileImage!),
+                              fit: BoxFit.cover,
+                            )
+                          : user.profilePicture != null && user.profilePicture!.isNotEmpty
+                              ? DecorationImage(
+                                  image: NetworkImage(user.profilePicture!),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                    ),
+                    child: _profileImage == null && (user.profilePicture == null || user.profilePicture!.isEmpty)
+                        ? const Icon(
+                            Icons.person,
+                            size: 60,
+                            color: Color(0xFF1B4332),
+                          )
+                        : null,
+                  ),
+                  if (_isUploading)
+                    const Positioned.fill(
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF1B4332),
+                        ),
+                      ),
+                    )
+                  else
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFB85C00),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Abish Khanal',
-              style: TextStyle(
+            
+            // User Name
+            Text(
+              '${user.firstName} ${user.lastName}',
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF1F2937),
@@ -65,6 +235,8 @@ class UserProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
+            
+            // Edit Profile Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -86,9 +258,19 @@ class UserProfileScreen extends StatelessWidget {
             _buildSectionCard(
               'VITAL METRICS',
               [
-                _buildMetricRow('Age', '28 yrs', 'Weight', '74 kg'),
+                _buildMetricRow(
+                  'Age',
+                  user.age != null ? '${user.age} yrs' : 'Not set',
+                  'Weight',
+                  user.weight != null ? '${user.weight!.toStringAsFixed(1)} kg' : 'Not set',
+                ),
                 const SizedBox(height: 16),
-                _buildMetricRow('Height', '178 cm', 'Goal', 'Muscle Gain'),
+                _buildMetricRow(
+                  'Height',
+                  user.height != null ? '${user.height!.toStringAsFixed(0)} cm' : 'Not set',
+                  'Goal',
+                  _formatGoal(user.fitnessGoal),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -100,11 +282,14 @@ class UserProfileScreen extends StatelessWidget {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: [
-                    _buildHealthChip('No Allergies', Colors.green),
-                    _buildHealthChip('Low Sodium Diet', Colors.teal),
-                    _buildHealthChip('Lactose Sensitive', Colors.orange),
-                  ],
+                  children: user.healthConditions != null && user.healthConditions!.isNotEmpty
+                      ? user.healthConditions!.map((condition) => _buildHealthChip(
+                            condition,
+                            _getConditionColor(condition),
+                          )).toList()
+                      : [
+                          _buildHealthChip('No Conditions', Colors.grey),
+                        ],
                 ),
               ],
             ),
@@ -116,17 +301,24 @@ class UserProfileScreen extends StatelessWidget {
               [
                 _buildSettingItem(Icons.lock_outline, 'Privacy & Security'),
                 const Divider(height: 1),
-                _buildSettingItem(Icons.language, 'Language', trailing: Text('English (US)', style: TextStyle(color: Color(0xFF6B7280), fontSize: 14))),
+                _buildSettingItem(Icons.language, 'Language',
+                    trailing: Text('English (US)',
+                        style: TextStyle(color: Color(0xFF6B7280), fontSize: 14))),
                 const Divider(height: 1),
                 GestureDetector(
-                  onTap: () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
-                      (route) => false,
-                    );
+                  onTap: () async {
+                    final authNotifier = ref.read(authViewModelProvider.notifier);
+                    await authNotifier.logout();
+                    if (mounted) {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        (route) => false,
+                      );
+                    }
                   },
-                  child: _buildSettingItem(Icons.logout, 'Sign Out', trailing: const Icon(Icons.chevron_right, color: Colors.red)),
+                  child: _buildSettingItem(Icons.logout, 'Sign Out',
+                      trailing: const Icon(Icons.chevron_right, color: Colors.red)),
                 ),
               ],
             ),
@@ -135,6 +327,29 @@ class UserProfileScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatGoal(String? goal) {
+    if (goal == null) return 'Not set';
+    switch (goal) {
+      case 'lose_weight':
+        return 'Lose Weight';
+      case 'maintain':
+        return 'Maintain';
+      case 'gain_muscle':
+        return 'Muscle Gain';
+      case 'bulk':
+        return 'Bulk';
+      default:
+        return 'Not set';
+    }
+  }
+
+  Color _getConditionColor(String condition) {
+    if (condition.toLowerCase().contains('allerg')) return Colors.green;
+    if (condition.toLowerCase().contains('sodium')) return Colors.teal;
+    if (condition.toLowerCase().contains('lactose')) return Colors.orange;
+    return Colors.blue;
   }
 
   Widget _buildSectionCard(String title, List<Widget> children) {
