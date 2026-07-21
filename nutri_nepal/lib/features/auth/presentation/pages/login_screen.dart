@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutri_nepal/features/auth/presentation/pages/signup_screen.dart';
+import 'package:nutri_nepal/features/auth/presentation/pages/health_onboarding_screen.dart';
 import 'package:nutri_nepal/features/dashboard/presentation/pages/dashboard_screen.dart';
 import 'package:nutri_nepal/features/auth/presentation/state/auth_state.dart';
 import 'package:nutri_nepal/features/auth/presentation/view_model/auth_viewmodel.dart';
@@ -16,11 +17,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _hasNavigated = false; // ✅ NEW: Prevent multiple navigations
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _hasNavigated = false; // ✅ Reset flag
     super.dispose();
   }
 
@@ -48,18 +51,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
 
+    // ✅ FIX: Added _hasNavigated flag to prevent duplicate navigation
     ref.listen<AuthState>(authViewModelProvider, (previous, next) {
-      if (next.status == AuthStatus.authenticated) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const DashboardScreen()),
-        );
+      if (next.status == AuthStatus.authenticated && next.user != null && !_hasNavigated) {
+        _hasNavigated = true; // ✅ Set flag to prevent re-navigation
+        
+        final user = next.user!;
+        
+        // Check if health profile is incomplete
+        if (user.age == null || user.weight == null || user.height == null) {
+          // Go to Health Onboarding
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HealthOnboardingScreen()),
+          );
+        } else {
+          // Go straight to Dashboard
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          );
+        }
       } 
-      // ✅ CHANGE: errorMessage → message
       else if (next.status == AuthStatus.error && next.message != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            // ✅ CHANGE: errorMessage → message
             content: Text(next.message!),
             backgroundColor: Colors.red,
           ),

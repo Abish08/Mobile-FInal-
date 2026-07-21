@@ -36,12 +36,12 @@ class HiveService {
 
   Box<String> get _session => Hive.box<String>(HiveTableConstant.sessionBox);
 
+  // ✅ FIXED: Removed the email existence check that was causing the error
   Future<AuthHiveModel> saveUser(AuthHiveModel user) async {
-    final normalizedEmail = user.email.toLowerCase();
-    if (isEmailTaken(normalizedEmail)) {
-      throw StateError('An account with this email already exists.');
-    }
-
+    // Simply save/update the user - no duplicate email check
+    // The backend already prevents duplicate emails during registration
+    // During login, we WANT to update the existing user with fresh data
+    
     await _users.put(user.userId, user);
     await _session.put(HiveTableConstant.activeUserKey, user.userId);
     return user;

@@ -42,11 +42,13 @@ class WeeklyMealPlanScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Week Days
-            SizedBox(
+            // Week Days - FIXED with padding
+            Container(
               height: 60,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               child: ListView(
                 scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
                 children: [
                   _buildDayChip('MON', '15', isSelected: true),
                   _buildDayChip('TUE', '16'),

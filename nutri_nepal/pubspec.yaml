@@ -109,6 +109,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+     # 🔹 Image Upload (Sprint 5)
+  image_picker: ^1.2.2
+
   cupertino_icons: ^1.0.8
 
   # 🔹 State Management (Riverpod) - Matches teacher's pattern
@@ -147,6 +150,7 @@ dev_dependencies:
   build_runner: ^2.4.13
   json_serializable: ^6.8.0
   freezed: ^3.1.0
+
   # NOTE: Using committed .g.dart files for Hive adapters (avoids analyzer conflicts with Riverpod 3)
 
   # 🔹 Testing
@@ -155,7 +159,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # ✅ Your Custom Fonts (Keep these!)
   fonts:
     - family: Montserrat
       fonts:

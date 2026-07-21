@@ -83,13 +83,22 @@ class WorkoutScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      _buildDayTab('Day 1', isSelected: true),
-                      _buildDayTab('Day 2'),
-                      _buildDayTab('Day 3'),
-                      _buildDayTab('Day 4'),
-                    ],
+                  
+                  // ✅ FIXED: Wrapped in SingleChildScrollView to prevent overflow
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: [
+                        _buildDayTab('Day 1', isSelected: true),
+                        const SizedBox(width: 8),
+                        _buildDayTab('Day 2'),
+                        const SizedBox(width: 8),
+                        _buildDayTab('Day 3'),
+                        const SizedBox(width: 8),
+                        _buildDayTab('Day 4'),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -168,6 +177,7 @@ class WorkoutScreen extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 20), // Extra padding at bottom
           ],
         ),
       ),
@@ -176,8 +186,7 @@ class WorkoutScreen extends StatelessWidget {
 
   Widget _buildDayTab(String label, {bool isSelected = false}) {
     return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
         color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
@@ -220,7 +229,7 @@ class WorkoutScreen extends StatelessWidget {
             child: Icon(icon, color: color, size: 28),
           ),
           const SizedBox(width: 16),
-          Expanded(
+          Expanded( // ✅ Expanded ensures text doesn't overflow horizontally
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
