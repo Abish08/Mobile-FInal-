@@ -3,6 +3,7 @@ import { MealsService } from './meals.service';
 import { CreateMealDto } from './dto/create-meal.dto';
 import { UpdateMealDto } from './dto/update-meal.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { AdminGuard } from '../common/guards/admin.guard'; // ✅ Added AdminGuard
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe';
 
@@ -10,9 +11,52 @@ import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe';
 @UseGuards(JwtAuthGuard)
 export class MealsController {
   constructor(private readonly mealsService: MealsService) {}
-  @Post() async create(@Body() dto: CreateMealDto) { return { success: true, data: await this.mealsService.create(dto) }; }
-  @Get() async findAll(@CurrentUser() user: any, @Query('userId') userId?: string) { return { success: true, data: await this.mealsService.findAll(userId || user._id.toString()) }; }
-  @Get(':id') async findOne(@Param('id', ParseObjectIdPipe) id: string) { return { success: true, data: await this.mealsService.findById(id) }; }
-  @Put(':id') async update(@Param('id', ParseObjectIdPipe) id: string, @Body() dto: UpdateMealDto) { return { success: true, data: await this.mealsService.update(id, dto) }; }
-  @Delete(':id') async remove(@Param('id', ParseObjectIdPipe) id: string) { return { success: true, data: await this.mealsService.remove(id) }; }
+
+  // USER ENDPOINTS (Keep existing functionality)
+  
+  
+  @Post() 
+  async create(@CurrentUser() user: any, @Body() dto: CreateMealDto) { 
+    // Attach userId so it saves to the correct user's log
+    return { success: true, data: await this.mealsService.create({ ...dto, userId: user._id }) }; 
+  }
+
+  @Get() 
+  async findAll(@CurrentUser() user: any, @Query('userId') userId?: string) { 
+    return { success: true, data: await this.mealsService.findAll(userId || user._id.toString()) }; 
+  }
+
+  @Get(':id') 
+  async findOne(@Param('id', ParseObjectIdPipe) id: string) { 
+    return { success: true, data: await this.mealsService.findById(id) }; 
+  }
+
+  @Put(':id') 
+  async update(@Param('id', ParseObjectIdPipe) id: string, @Body() dto: UpdateMealDto) { 
+    return { success: true, data: await this.mealsService.update(id, dto) }; 
+  }
+
+  @Delete(':id') 
+  async remove(@Param('id', ParseObjectIdPipe) id: string) { 
+    return { success: true, data: await this.mealsService.remove(id) }; 
+  }
+
+  
+  //  NEW: ADMIN ENDPOINTS (Food Management)
+
+
+  @Get('admin/all')
+  @UseGuards(AdminGuard) // Only admins can access this
+  async findAllAdmin(
+    @Query('search') search?: string,
+    @Query('category') category?: string,
+  ) {
+    return this.mealsService.findAllAdmin(search, category);
+  }
+
+  @Get('admin/stats')
+  @UseGuards(AdminGuard) // Only admins can access this
+  async getAdminStats() {
+    return this.mealsService.getAdminStats();
+  }
 }

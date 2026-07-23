@@ -10,6 +10,7 @@ export type UserDocument = User & Document & {
 
 @Schema({ timestamps: true })
 export class User {
+  // --- Existing Auth Fields ---
   @Prop({ required: true, trim: true }) firstName!: string;
   @Prop({ required: true, trim: true }) lastName!: string;
   @Prop({ required: true, unique: true, lowercase: true, trim: true }) email!: string;
@@ -17,6 +18,14 @@ export class User {
   @Prop({ required: true, minlength: 6, select: false }) password!: string;
   @Prop({ default: 'default-profile.png' }) profilePicture!: string;
   @Prop({ default: 'user' }) role!: string;
+
+  // --- NEW: Health Profile Fields (Week 4) ---
+  @Prop({ type: Number }) age?: number;
+  @Prop({ type: Number }) weight?: number; // in kg
+  @Prop({ type: Number }) height?: number; // in cm
+  @Prop({ type: String, enum: ['male', 'female', 'other'] }) gender?: string;
+  @Prop({ type: String, enum: ['lose_weight', 'maintain', 'gain_muscle', 'bulk'] }) fitnessGoal?: string;
+  @Prop({ type: [String] }) healthConditions?: string[]; // e.g., ['Diabetes', 'Hypertension']
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

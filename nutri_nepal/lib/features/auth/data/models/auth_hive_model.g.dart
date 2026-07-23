@@ -1,5 +1,5 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-// Manually updated to include health profile fields
+// Manually updated to include health profile fields and role
 
 part of 'auth_hive_model.dart';
 
@@ -20,20 +20,21 @@ class AuthHiveModelAdapter extends TypeAdapter<AuthHiveModel> {
       phone: fields[3] as String,
       email: fields[4] as String,
       password: fields[5] as String,
-      profilePicture: fields[6] as String? ?? 'default-profile.png', // ✅ Fixed
+      profilePicture: fields[6] as String? ?? 'default-profile.png',
       age: fields[7] as int?,
       weight: fields[8] as double?,
       height: fields[9] as double?,
       gender: fields[10] as String?,
       fitnessGoal: fields[11] as String?,
       healthConditions: fields[12] as List<String>?,
+      role: fields[13] as String? ?? 'user', // 
     );
   }
 
   @override
   void write(BinaryWriter writer, AuthHiveModel obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(14) // ✅ Changed from 13 to 14 (total number of fields)
       ..writeByte(0)
       ..write(obj.userId)
       ..writeByte(1)
@@ -59,7 +60,9 @@ class AuthHiveModelAdapter extends TypeAdapter<AuthHiveModel> {
       ..writeByte(11)
       ..write(obj.fitnessGoal)
       ..writeByte(12)
-      ..write(obj.healthConditions);
+      ..write(obj.healthConditions)
+      ..writeByte(13) //
+      ..write(obj.role);
   }
 
   @override

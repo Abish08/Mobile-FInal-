@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutri_nepal/features/auth/presentation/pages/signup_screen.dart';
 import 'package:nutri_nepal/features/auth/presentation/pages/health_onboarding_screen.dart';
 import 'package:nutri_nepal/features/dashboard/presentation/pages/dashboard_screen.dart';
+import 'package:nutri_nepal/features/admin/presentation/pages/admin_dashboard_screen.dart';
 import 'package:nutri_nepal/features/auth/presentation/state/auth_state.dart';
 import 'package:nutri_nepal/features/auth/presentation/view_model/auth_viewmodel.dart';
 
@@ -17,13 +18,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _hasNavigated = false; // ✅ NEW: Prevent multiple navigations
+  bool _hasNavigated = false; 
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _hasNavigated = false; // ✅ Reset flag
+    _hasNavigated = false; 
     super.dispose();
   }
 
@@ -51,29 +52,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
 
-    // ✅ FIX: Added _hasNavigated flag to prevent duplicate navigation
     ref.listen<AuthState>(authViewModelProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated && next.user != null && !_hasNavigated) {
-        _hasNavigated = true; // ✅ Set flag to prevent re-navigation
+        _hasNavigated = true; 
         
         final user = next.user!;
         
-        // Check if health profile is incomplete
-        if (user.age == null || user.weight == null || user.height == null) {
-          // Go to Health Onboarding
+        // 🔍 DEBUG PRINTS
+        print('');
+        print('🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍');
+        print('🔍 DEBUG: Login successful!');
+        print(' DEBUG: User email: ${user.email}');
+        print('🔍 DEBUG: User role: "${user.role}"');
+        print('🔍 DEBUG: User firstName: ${user.firstName}');
+        print('🔍 DEBUG: User age: ${user.age}');
+        print(' DEBUG: User weight: ${user.weight}');
+        print('🔍 DEBUG: User height: ${user.height}');
+        print('🔍 DEBUG: Role comparison: "${user.role}" == "admin" is ${user.role == 'admin'}');
+        print('🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍');
+        print('');
+        
+        if (user.role == 'admin') {
+          print('✅ NAVIGATING TO ADMIN DASHBOARD');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminDashboardScreen()),
+          );
+        } else if (user.age == null || user.weight == null || user.height == null) {
+          print('✅ NAVIGATING TO HEALTH ONBOARDING (missing health data)');
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const HealthOnboardingScreen()),
           );
         } else {
-          // Go straight to Dashboard
+          print('✅ NAVIGATING TO REGULAR DASHBOARD');
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const DashboardScreen()),
           );
         }
-      } 
-      else if (next.status == AuthStatus.error && next.message != null) {
+      } else if (next.status == AuthStatus.error && next.message != null) {
+        print(' LOGIN ERROR: ${next.message}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.message!),

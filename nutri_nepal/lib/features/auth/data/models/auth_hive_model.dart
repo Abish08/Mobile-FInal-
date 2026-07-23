@@ -21,6 +21,7 @@ class AuthHiveModel extends HiveObject {
   @HiveField(10) final String? gender;
   @HiveField(11) final String? fitnessGoal;
   @HiveField(12) final List<String>? healthConditions;
+  @HiveField(13) final String role; // ✅ ADDED ROLE FIELD
 
   AuthHiveModel({
     String? userId,
@@ -36,6 +37,7 @@ class AuthHiveModel extends HiveObject {
     this.gender,
     this.fitnessGoal,
     this.healthConditions,
+    this.role = 'user', // ✅ ADDED ROLE DEFAULT
   }) : userId = userId ?? const Uuid().v4();
 
   factory AuthHiveModel.fromJson(Map<String, dynamic> json) {
@@ -55,6 +57,7 @@ class AuthHiveModel extends HiveObject {
       healthConditions: json['healthConditions'] != null
           ? List<String>.from(json['healthConditions'])
           : [],
+      role: json['role'] ?? 'user', // ✅ ADDED ROLE PARSING
     );
   }
 
@@ -66,6 +69,7 @@ class AuthHiveModel extends HiveObject {
       'phone': phone,
       'password': password,
       'profilePicture': profilePicture,
+      'role': role, // ✅ ADDED TO JSON
     };
   }
 
@@ -77,7 +81,6 @@ class AuthHiveModel extends HiveObject {
       phone: entity.phone,
       email: entity.email,
       password: entity.password,
-      // ✅ FIX: Provide default value if null
       profilePicture: entity.profilePicture ?? 'default-profile.png',
       age: entity.age,
       weight: entity.weight,
@@ -85,6 +88,7 @@ class AuthHiveModel extends HiveObject {
       gender: entity.gender,
       fitnessGoal: entity.fitnessGoal,
       healthConditions: entity.healthConditions,
+      role: entity.role, // ✅ ADDED FROM ENTITY
     );
   }
 
@@ -103,6 +107,7 @@ class AuthHiveModel extends HiveObject {
       gender: gender,
       fitnessGoal: fitnessGoal,
       healthConditions: healthConditions,
+      role: role, // ✅ ADDED TO ENTITY
     );
   }
 }

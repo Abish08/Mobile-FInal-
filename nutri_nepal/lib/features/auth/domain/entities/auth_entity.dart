@@ -7,9 +7,8 @@ class AuthEntity extends Equatable {
   final String email;
   final String phone;
   final String password;
-  
-  // ✅ THIS IS THE MISSING FIELD
-  final String? profilePicture; 
+  final String? profilePicture;
+  final String role; // ✅ ADD THIS
   
   final int? age;
   final double? weight;
@@ -25,7 +24,8 @@ class AuthEntity extends Equatable {
     required this.email,
     required this.phone,
     required this.password,
-    this.profilePicture, // ✅ MUST BE HERE
+    this.profilePicture,
+    this.role = 'user', // ✅ ADD THIS
     this.age,
     this.weight,
     this.height,
@@ -33,6 +33,28 @@ class AuthEntity extends Equatable {
     this.fitnessGoal,
     this.healthConditions,
   });
+
+  // ✅ ADD THIS METHOD
+  factory AuthEntity.fromJson(Map<String, dynamic> json) {
+    return AuthEntity(
+      userId: json['_id'] ?? json['id'],
+      firstName: json['firstName'] ?? '',
+      lastName: json['lastName'] ?? '',
+      email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
+      password: '',
+      profilePicture: json['profilePicture'],
+      role: json['role'] ?? 'user',
+      age: json['age'],
+      weight: (json['weight'] as num?)?.toDouble(),
+      height: (json['height'] as num?)?.toDouble(),
+      gender: json['gender'],
+      fitnessGoal: json['fitnessGoal'],
+      healthConditions: json['healthConditions'] != null
+          ? List<String>.from(json['healthConditions'])
+          : null,
+    );
+  }
 
   String get displayName => '$firstName $lastName'.trim();
 
@@ -44,7 +66,8 @@ class AuthEntity extends Equatable {
         email,
         phone,
         password,
-        profilePicture, // ✅ MUST BE HERE
+        profilePicture,
+        role, // ✅ ADD THIS
         age,
         weight,
         height,
