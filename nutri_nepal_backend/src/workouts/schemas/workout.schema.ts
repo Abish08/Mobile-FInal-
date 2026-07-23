@@ -32,14 +32,15 @@ export class Workout {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   createdBy?: Types.ObjectId;
 
-  @Prop([
-    {
-      type: String,
-      url: String,
-      publicId: String,
-    },
-  ])
-  media?: Array<{ type: string; url: string; publicId: string }>;
+  // ✅ NEW: Image and YouTube fields
+  @Prop()
+  thumbnail?: string;
+
+  @Prop([String])
+  images?: string[];
+
+  @Prop()
+  youtubeUrl?: string;
 
   // Figma fields (optional, for future use)
   @Prop() sets?: number;
