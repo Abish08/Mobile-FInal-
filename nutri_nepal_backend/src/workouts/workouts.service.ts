@@ -10,7 +10,7 @@ export class WorkoutsService {
   constructor(@InjectModel(Workout.name) private workoutModel: Model<WorkoutDocument>) {}
 
   // --- EXISTING USER METHODS ---
-  async create(dto: CreateWorkoutDto) {
+  async create(dto: any) {
     return this.workoutModel.create(dto);
   }
 
@@ -35,8 +35,7 @@ export class WorkoutsService {
     if (!deleted) throw new NotFoundException('Workout not found');
   }
 
-  // --- NEW ADMIN METHODS ---
-
+  // --- ADMIN METHODS ---
   async findAllAdmin(search?: string, category?: string) {
     const query: any = {};
     
@@ -68,5 +67,27 @@ export class WorkoutsService {
     const deleted = await this.workoutModel.findByIdAndDelete(id);
     if (!deleted) throw new NotFoundException('Workout not found');
     return { success: true, message: 'Workout deleted' };
+  }
+
+  // ✅ NEW: IMAGE HANDLING METHODS
+  async updateThumbnail(id: string, thumbnailPath: string) {
+    const workout = await this.workoutModel.findById(id);
+    if (!workout) throw new NotFoundException('Workout not found');
+
+    workout.thumbnail = thumbnailPath;
+    await workout.save();
+
+    return { success: true, data: workout };
+  }
+
+  async addImages(id: string, imagePaths: string[]) {
+    const workout = await this.workoutModel.findById(id);
+    if (!workout) throw new NotFoundException('Workout not found');
+
+    const existingImages = workout.images || [];
+    workout.images = [...existingImages, ...imagePaths];
+    await workout.save();
+
+    return { success: true, data: workout };
   }
 }
