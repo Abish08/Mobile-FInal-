@@ -9,6 +9,7 @@ import { UpdateWorkoutDto } from './dto/update-workout.dto';
 export class WorkoutsService {
   constructor(@InjectModel(Workout.name) private workoutModel: Model<WorkoutDocument>) {}
 
+  // --- EXISTING USER METHODS ---
   async create(dto: CreateWorkoutDto) {
     return this.workoutModel.create(dto);
   }
@@ -32,5 +33,40 @@ export class WorkoutsService {
   async remove(id: string) {
     const deleted = await this.workoutModel.findByIdAndDelete(id);
     if (!deleted) throw new NotFoundException('Workout not found');
+  }
+
+  // --- NEW ADMIN METHODS ---
+
+  async findAllAdmin(search?: string, category?: string) {
+    const query: any = {};
+    
+    if (search) {
+      query.name = { $regex: search, $options: 'i' };
+    }
+    if (category && category !== 'All') {
+      query.category = category;
+    }
+
+    const workouts = await this.workoutModel.find(query).sort({ createdAt: -1 });
+    const totalItems = await this.workoutModel.countDocuments();
+    
+    return { success: true, workouts, totalItems };
+  }
+
+  async createAdminWorkout(dto: any) {
+    const created = await this.workoutModel.create(dto);
+    return { success: true, data: created };
+  }
+
+  async updateAdminWorkout(id: string, dto: any) {
+    const updated = await this.workoutModel.findByIdAndUpdate(id, dto, { new: true });
+    if (!updated) throw new NotFoundException('Workout not found');
+    return { success: true, data: updated };
+  }
+
+  async deleteAdminWorkout(id: string) {
+    const deleted = await this.workoutModel.findByIdAndDelete(id);
+    if (!deleted) throw new NotFoundException('Workout not found');
+    return { success: true, message: 'Workout deleted' };
   }
 }

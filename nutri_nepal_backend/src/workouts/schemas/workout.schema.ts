@@ -3,25 +3,52 @@ import { Document, Types } from 'mongoose';
 
 export type WorkoutDocument = Workout & Document;
 
-@Schema({ timestamps: true })
+@Schema({ collection: 'workouts', timestamps: true })
 export class Workout {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  userId!: Types.ObjectId;
-
   @Prop({ required: true })
-  exerciseName!: string;
+  name!: string;
 
-  @Prop({ required: true })
-  sets!: number;
-
-  @Prop({ required: true })
-  reps!: number;
+  @Prop({ required: true, enum: ['Strength', 'Cardio', 'Flexibility', 'Other'] })
+  category!: string;
 
   @Prop()
-  weight?: number;
+  duration?: number; // in minutes
 
-  @Prop({ type: Date, default: Date.now })
-  date!: Date;
+  @Prop()
+  caloriesBurned?: number;
+
+  @Prop({ enum: ['Beginner', 'Intermediate', 'Advanced'] })
+  difficulty?: string;
+
+  @Prop()
+  description?: string;
+
+  @Prop()
+  equipment?: string;
+
+  @Prop({ default: true })
+  isApproved!: boolean;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  createdBy?: Types.ObjectId;
+
+  @Prop([
+    {
+      type: String,
+      url: String,
+      publicId: String,
+    },
+  ])
+  media?: Array<{ type: string; url: string; publicId: string }>;
+
+  // Figma fields (optional, for future use)
+  @Prop() sets?: number;
+  @Prop() reps?: number;
+  @Prop() rest?: string;
+  @Prop() intensity?: string;
+  @Prop() cycles?: number;
+  @Prop() focus?: string;
+  @Prop() day?: string;
 }
 
 export const WorkoutSchema = SchemaFactory.createForClass(Workout);

@@ -3,6 +3,7 @@ import { WorkoutsService } from './workouts.service';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
 import { UpdateWorkoutDto } from './dto/update-workout.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { AdminGuard } from '../common/guards/admin.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe';
 
@@ -11,6 +12,7 @@ import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe';
 export class WorkoutsController {
   constructor(private readonly workoutsService: WorkoutsService) {}
 
+  // --- USER ENDPOINTS ---
   @Post()
   async create(@Body() dto: CreateWorkoutDto, @CurrentUser() user: any) {
     return { success: true, data: await this.workoutsService.create({ ...dto, userId: user._id }) };
@@ -35,5 +37,34 @@ export class WorkoutsController {
   async remove(@Param('id', ParseObjectIdPipe) id: string) {
     await this.workoutsService.remove(id);
     return { success: true, message: 'Workout deleted' };
+  }
+
+  // --- ADMIN ENDPOINTS ---
+
+  @Get('admin/all')
+  @UseGuards(AdminGuard)
+  async getAllWorkouts(
+    @Query('search') search?: string,
+    @Query('category') category?: string,
+  ) {
+    return this.workoutsService.findAllAdmin(search, category);
+  }
+
+  @Post('admin')
+  @UseGuards(AdminGuard)
+  async createAdminWorkout(@Body() dto: any) {
+    return this.workoutsService.createAdminWorkout(dto);
+  }
+
+  @Put('admin/:id')
+  @UseGuards(AdminGuard)
+  async updateAdminWorkout(@Param('id') id: string, @Body() dto: any) {
+    return this.workoutsService.updateAdminWorkout(id, dto);
+  }
+
+  @Delete('admin/:id')
+  @UseGuards(AdminGuard)
+  async deleteAdminWorkout(@Param('id') id: string) {
+    return this.workoutsService.deleteAdminWorkout(id);
   }
 }
