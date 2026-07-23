@@ -6,7 +6,7 @@ class ApiEndpoints {
 
   // Configuration
   static const bool isPhysicalDevice = true;
-  static const String _ipAddress = '192.168.101.6';
+  static const String _ipAddress = '192.168.101.10';
   static const int _port = 3000;
 
   // Base URLs

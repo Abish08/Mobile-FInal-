@@ -40,6 +40,19 @@ class Workout {
       return idField.toString();
     }
 
+    // ✅ Safe conversion helpers
+    String? safeString(dynamic value) {
+      if (value == null) return null;
+      return value.toString();
+    }
+
+    int? safeInt(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
+
     // Get thumbnail or first image from images array
     String? thumbnail;
     if (json['thumbnail'] != null) {
@@ -50,15 +63,15 @@ class Workout {
 
     return Workout(
       id: extractId(json['_id']),
-      name: json['name'] ?? 'Unknown',
-      category: json['category'] ?? 'Other',
-      day: json['day'] ?? 'Any Day',
-      difficulty: json['difficulty'],
-      duration: json['duration']?.toString(),
-      caloriesBurned: json['caloriesBurned'] as int?,
-      equipment: json['equipment'],
+      name: safeString(json['name']) ?? 'Unknown',
+      category: safeString(json['category']) ?? 'Other',
+      day: safeString(json['day']) ?? 'Any Day',
+      difficulty: safeString(json['difficulty']),
+      duration: safeString(json['duration']), // ✅ Convert to String
+      caloriesBurned: safeInt(json['caloriesBurned']),
+      equipment: safeString(json['equipment']),
       thumbnail: thumbnail,
-      youtubeUrl: json['youtubeUrl'],
+      youtubeUrl: safeString(json['youtubeUrl']),
       rawData: json,
     );
   }
@@ -185,7 +198,7 @@ class _WorkoutManagementScreenState extends ConsumerState<WorkoutManagementScree
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ✅ Show Image if available
+              // Show Image if available
               if (imageUrl != null)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
@@ -242,7 +255,7 @@ class _WorkoutManagementScreenState extends ConsumerState<WorkoutManagementScree
                         if (w.difficulty != null) _buildChip(w.difficulty!, Colors.blue),
                       ],
                     ),
-                    // ✅ Show YouTube Link if available
+                    // Show YouTube Link if available
                     if (youtubeUrl != null && youtubeUrl.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
@@ -291,7 +304,7 @@ class _WorkoutManagementScreenState extends ConsumerState<WorkoutManagementScree
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              if (w.duration != null) _buildMetric('Duration', '${w.duration}m'),
+              if (w.duration != null) _buildMetric('Duration', '${w.duration}'),
               if (w.caloriesBurned != null) _buildMetric('Calories', '${w.caloriesBurned}'),
               if (w.equipment != null && w.equipment!.isNotEmpty) _buildMetric('Equipment', w.equipment!),
             ],
