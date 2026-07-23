@@ -23,6 +23,6 @@ async function bootstrap() {
   
   console.log(` NutriNepal Backend running on http://localhost:${port}/api/v1`);
   // Fixed: Changed hardcoded .5 to your actual ipconfig IP (.2)
-console.log(`📱 Network access: http://192.168.101.6:${port}/api/v1`);}
+console.log(`📱 Network access: http://192.168.101.10:${port}/api/v1`);}
 
 bootstrap();
