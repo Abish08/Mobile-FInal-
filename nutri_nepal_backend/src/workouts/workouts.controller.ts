@@ -1,4 +1,7 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Query, UseInterceptors, UploadedFile, UploadedFiles } from '@nestjs/common';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { WorkoutsService } from './workouts.service';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
 import { UpdateWorkoutDto } from './dto/update-workout.dto';
@@ -40,7 +43,6 @@ export class WorkoutsController {
   }
 
   // --- ADMIN ENDPOINTS ---
-
   @Get('admin/all')
   @UseGuards(AdminGuard)
   async getAllWorkouts(
@@ -66,5 +68,46 @@ export class WorkoutsController {
   @UseGuards(AdminGuard)
   async deleteAdminWorkout(@Param('id') id: string) {
     return this.workoutsService.deleteAdminWorkout(id);
+  }
+
+  // ✅ NEW: IMAGE UPLOAD ENDPOINTS
+  @Post(':id/upload-thumbnail')
+  @UseGuards(AdminGuard)
+  @UseInterceptors(FileInterceptor('thumbnail', {
+    storage: diskStorage({
+      destination: './uploads',
+      filename: (req, file, callback) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = extname(file.originalname);
+        callback(null, `workout-${uniqueSuffix}${ext}`);
+      },
+    }),
+  }))
+  async uploadThumbnail(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const thumbnailPath = `/uploads/${file.filename}`;
+    return this.workoutsService.updateThumbnail(id, thumbnailPath);
+  }
+
+  @Post(':id/upload-images')
+  @UseGuards(AdminGuard)
+  @UseInterceptors(FilesInterceptor('images', 5, {
+    storage: diskStorage({
+      destination: './uploads',
+      filename: (req, file, callback) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = extname(file.originalname);
+        callback(null, `workout-${uniqueSuffix}${ext}`);
+      },
+    }),
+  }))
+  async uploadImages(
+    @Param('id') id: string,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+  ) {
+    const imagePaths = files.map(file => `/uploads/${file.filename}`);
+    return this.workoutsService.addImages(id, imagePaths);
   }
 }
