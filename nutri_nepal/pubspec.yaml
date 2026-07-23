@@ -117,6 +117,9 @@ dependencies:
   # 🔹 Image Upload
   image_picker: ^1.2.2
 
+  # 🔹 URL Launcher (For opening YouTube links)
+  url_launcher: ^6.2.5
+
   # 🔹 State Management (Riverpod)
   flutter_riverpod: ^3.0.3
   riverpod_annotation: ^3.0.3
