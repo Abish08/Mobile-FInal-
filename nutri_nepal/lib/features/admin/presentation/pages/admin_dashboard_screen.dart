@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:nutri_nepal/core/api/api_client.dart';
 import 'package:nutri_nepal/core/api/api_endpoints.dart';
 import 'package:nutri_nepal/features/admin/presentation/pages/user_management_screen.dart';
 import 'package:nutri_nepal/features/admin/presentation/pages/meal_management_screen.dart';
-import 'package:nutri_nepal/features/admin/presentation/pages/workout_management_screen.dart'; // ✅ ADDED IMPORT
+import 'package:nutri_nepal/features/admin/presentation/pages/workout_management_screen.dart';
+// ️ IMPORTANT: Make sure this import matches your actual Login screen path!
+import 'package:nutri_nepal/features/auth/presentation/pages/login_screen.dart'; 
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -46,7 +50,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       if (userStatsRes.statusCode == 200) {
         final stats = userStatsRes.data['stats'] ?? {};
         
-        // Process Fitness Goals
         final goals = stats['usersByGoal'] as List? ?? [];
         Map<String, int> tempGoals = {
           'Weight Loss': 0, 'Muscle Gain': 0, 'Endurance': 0, 'Maintenance': 0
@@ -68,7 +71,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           tempGoals[goalName] = (tempGoals[goalName] ?? 0) + count;
         }
         
-        // Process BMI Distribution
         final bmiData = stats['bmiDistribution'] as List? ?? [];
         int underweight = 0, normal = 0, overweight = 0, obese = 0;
         
@@ -91,34 +93,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           _fitnessGoals = tempGoals;
           
           _bmiDistribution = [
-            PieChartSectionData(
-              value: underweight.toDouble(), 
-              color: Colors.blue, 
-              title: '${(underweight / totalBmi * 100).toStringAsFixed(0)}%', 
-              radius: 50, 
-              titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)
-            ),
-            PieChartSectionData(
-              value: normal.toDouble(), 
-              color: Colors.green, 
-              title: '${(normal / totalBmi * 100).toStringAsFixed(0)}%', 
-              radius: 50, 
-              titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)
-            ),
-            PieChartSectionData(
-              value: overweight.toDouble(), 
-              color: Colors.orange, 
-              title: '${(overweight / totalBmi * 100).toStringAsFixed(0)}%', 
-              radius: 50, 
-              titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)
-            ),
-            PieChartSectionData(
-              value: obese.toDouble(), 
-              color: Colors.red, 
-              title: '${(obese / totalBmi * 100).toStringAsFixed(0)}%', 
-              radius: 50, 
-              titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)
-            ),
+            PieChartSectionData(value: underweight.toDouble(), color: Colors.blue, title: '${(underweight / totalBmi * 100).toStringAsFixed(0)}%', radius: 50, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
+            PieChartSectionData(value: normal.toDouble(), color: Colors.green, title: '${(normal / totalBmi * 100).toStringAsFixed(0)}%', radius: 50, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
+            PieChartSectionData(value: overweight.toDouble(), color: Colors.orange, title: '${(overweight / totalBmi * 100).toStringAsFixed(0)}%', radius: 50, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
+            PieChartSectionData(value: obese.toDouble(), color: Colors.red, title: '${(obese / totalBmi * 100).toStringAsFixed(0)}%', radius: 50, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
           ];
         });
       }
@@ -131,7 +109,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         });
       }
       
-      // 3. Workout Stats - Direct count from workouts collection
+      // 3. Workout Stats
       try {
         final workoutRes = await apiClient.dio.get(ApiEndpoints.adminWorkouts);
         if (workoutRes.statusCode == 200) {
@@ -151,22 +129,68 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     }
   }
 
+  // ✅ LOGOUT LOGIC
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout Admin'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _performLogout();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _performLogout() async {
+    const storage = FlutterSecureStorage();
+    await storage.delete(key: 'auth_token'); 
+    await storage.delete(key: 'user_data');
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    // ⚠️ Make sure LoginScreen() matches your actual login widget name!
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()), 
+      (route) => false, 
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1B4332), // Dark green
+        backgroundColor: const Color(0xFF1B4332), 
         foregroundColor: Colors.white,
         elevation: 2,
         title: const Text(
           'Admin Dashboard',
-          style: TextStyle(
-            fontFamily: 'Montserrat', 
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+          style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold, fontSize: 20),
         ),
+        actions: [
+          // ✅ LOGOUT BUTTON
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: _showLogoutDialog,
+            tooltip: 'Logout',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: _isLoading 
           ? const Center(child: CircularProgressIndicator())
@@ -182,17 +206,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     const SizedBox(height: 12),
                     _buildStatsGrid(),
                     const SizedBox(height: 24),
-                    
                     _buildSectionTitle('Users by Fitness Goal'),
                     const SizedBox(height: 12),
                     _buildFitnessGoals(),
                     const SizedBox(height: 24),
-                    
                     _buildSectionTitle('BMI Distribution'),
                     const SizedBox(height: 12),
                     _buildBmiDistribution(),
                     const SizedBox(height: 24),
-                    
                     _buildSectionTitle('Quick Actions'),
                     const SizedBox(height: 12),
                     _buildQuickActions(),
@@ -205,15 +226,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   }
 
   Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        fontFamily: 'Montserrat',
-        color: Color(0xFF1F2937),
-      ),
-    );
+    return Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Montserrat', color: Color(0xFF1F2937)));
   }
 
   Widget _buildStatsGrid() {
@@ -221,7 +234,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      childAspectRatio: 1.5, // Fixed aspect ratio to prevent overflow
+      childAspectRatio: 1.5,
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
       children: [
@@ -249,28 +262,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Icon(icon, color: color, size: 28),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 28, 
-                  fontWeight: FontWeight.bold, 
-                  color: color, 
-                  fontFamily: 'Montserrat',
-                ),
-              ),
+              Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color, fontFamily: 'Montserrat')),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12, 
-              color: Color(0xFF6B7280), 
-              fontFamily: 'OpenSans',
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontFamily: 'OpenSans'), maxLines: 1, overflow: TextOverflow.ellipsis),
         ],
       ),
     );
@@ -282,11 +278,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
       child: Column(
         children: [
           _buildGoalRow('Weight Loss', Colors.red, _fitnessGoals['Weight Loss']!, total),
@@ -305,17 +297,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     double percentage = (count / total) * 100;
     return Row(
       children: [
-        SizedBox(
-          width: 100,
-          child: Text(
-            label, 
-            style: TextStyle(
-              color: color, 
-              fontWeight: FontWeight.bold, 
-              fontSize: 12
-            ),
-          ),
-        ),
+        SizedBox(width: 100, child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12))),
         Expanded(
           child: LinearProgressIndicator(
             value: count / total,
@@ -326,16 +308,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        SizedBox(
-          width: 40,
-          child: Text(
-            '${percentage.toStringAsFixed(0)}%', 
-            style: const TextStyle(
-              fontSize: 12, 
-              fontWeight: FontWeight.bold
-            ),
-          ),
-        ),
+        SizedBox(width: 40, child: Text('${percentage.toStringAsFixed(0)}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
       ],
     );
   }
@@ -343,24 +316,13 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   Widget _buildBmiDistribution() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
       child: Row(
         children: [
           Expanded(
             child: AspectRatio(
               aspectRatio: 1,
-              child: PieChart(
-                PieChartData(
-                  sections: _bmiDistribution,
-                  borderData: FlBorderData(show: false),
-                  centerSpaceRadius: 40,
-                  sectionsSpace: 2,
-                ),
-              ),
+              child: PieChart(PieChartData(sections: _bmiDistribution, borderData: FlBorderData(show: false), centerSpaceRadius: 40, sectionsSpace: 2)),
             ),
           ),
           const SizedBox(width: 16),
@@ -385,22 +347,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   Widget _buildBmiLegend(String label, Color color) {
     return Row(
       children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color, 
-            borderRadius: BorderRadius.circular(3)
-          ),
-        ),
+        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
         const SizedBox(width: 8),
-        Text(
-          label, 
-          style: const TextStyle(
-            fontSize: 12, 
-            color: Color(0xFF4B5563)
-          ),
-        ),
+        Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF4B5563))),
       ],
     );
   }
@@ -411,35 +360,15 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildActionButton(
-                'Manage Users', 
-                Icons.people, 
-                Colors.green, 
-                () {
-                  Navigator.push(
-                    context, 
-                    MaterialPageRoute(
-                      builder: (_) => const UserManagementScreen()
-                    ),
-                  );
-                },
-              ),
+              child: _buildActionButton('Manage Users', Icons.people, Colors.green, () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const UserManagementScreen()));
+              }),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildActionButton(
-                'Manage Foods', 
-                Icons.restaurant, 
-                Colors.blue, 
-                () {
-                  Navigator.push(
-                    context, 
-                    MaterialPageRoute(
-                      builder: (_) => const MealManagementScreen()
-                    ),
-                  );
-                },
-              ),
+              child: _buildActionButton('Manage Foods', Icons.restaurant, Colors.blue, () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const MealManagementScreen()));
+              }),
             ),
           ],
         ),
@@ -452,24 +381,13 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 Icons.fitness_center, 
                 Colors.orange, 
                 () {
-                  // ✅ FIXED: Uncommented and working!
-                  Navigator.push(
-                    context, 
-                    MaterialPageRoute(
-                      builder: (_) => const WorkoutManagementScreen()
-                    ),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const WorkoutManagementScreen()));
                 },
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildActionButton(
-                'View Reports', 
-                Icons.analytics, 
-                Colors.purple, 
-                () {},
-              ),
+              child: _buildActionButton('View Reports', Icons.analytics, Colors.purple, () {}),
             ),
           ],
         ),
@@ -496,12 +414,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             Expanded(
               child: Text(
                 label, 
-                style: TextStyle(
-                  color: color, 
-                  fontWeight: FontWeight.bold, 
-                  fontFamily: 'Montserrat',
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: color, fontWeight: FontWeight.bold, fontFamily: 'Montserrat', fontSize: 14),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
