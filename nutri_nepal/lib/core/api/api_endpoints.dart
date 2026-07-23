@@ -1,13 +1,12 @@
-// lib/core/api/api_endpoints.dart
-
-import 'package:nutri_nepal/core/constants/hive_table_constant.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 class ApiEndpoints {
   ApiEndpoints._();
 
   // Configuration
-  static const bool isPhysicalDevice = false;
-  static const String _ipAddress = '192.168.101.2'; // ✅ Your actual IP from ipconfig
+  static const bool isPhysicalDevice = true;
+  static const String _ipAddress = '192.168.101.6';
   static const int _port = 3000;
 
   // Base URLs
@@ -19,65 +18,75 @@ class ApiEndpoints {
   }
 
   static String get serverUrl => 'http://$_host:$_port';
-  static String get baseUrl => '$serverUrl/api/v1'; // ✅ Updated to match your backend
+  static String get baseUrl => '$serverUrl/api/v1';
   static String get mediaServerUrl => serverUrl;
-
   static String get profileImages => '$mediaServerUrl/uploads';
+
   static String resolveUploadUrl(String raw, {String? defaultFolder}) {
     final value = raw.trim().replaceAll('\\', '/');
     if (value.isEmpty) return '';
-
-    if (value.startsWith('http://') || value.startsWith('https://')) {
-      return value;
-    }
-
-    if (value.startsWith('/uploads/')) {
-      return '$mediaServerUrl$value';
-    }
-
-    if (value.startsWith('uploads/')) {
-      return '$mediaServerUrl/$value';
-    }
-
-    if (value.contains('/')) {
-      return '$profileImages/$value';
-    }
-
+    if (value.startsWith('http://') || value.startsWith('https://')) return value;
+    if (value.startsWith('/uploads/')) return '$mediaServerUrl$value';
+    if (value.startsWith('uploads/')) return '$mediaServerUrl/$value';
+    if (value.contains('/')) return '$profileImages/$value';
     if (defaultFolder != null && defaultFolder.isNotEmpty) {
       return '$profileImages/$defaultFolder/$value';
     }
-
     return '$profileImages/$value';
   }
 
   static const Duration connectionTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
 
-  // ============ Auth Endpoints ============
-  static const String register = '/users/register';
+  // User Endpoints
+  static const String users = '/users';
   static const String login = '/users/login';
+  static const String register = '/users/register';
+  static String userById(String id) => '/users/$id';
   static const String getMe = '/users/me';
-  static const String updateProfile = '/users/profile';
+  static const String getProfile = '/users/me';
+  static const String editProfile = '/users/profile';
 
-  // ============ User Endpoints ============
-  static const String users = '/users'; // ✅ Already exists in your backend
-  static String userById(String id) => '/users/$id'; // ✅ Already exists in your backend
-  static String deleteUser(String id) => '/users/$id'; // ✅ Already exists in your backend
+  //  Admin User Endpoints
+  static const String adminUsers = '/users';
+  static String adminUserById(String id) => '/users/$id';
+  static String adminDeleteUser(String id) => '/users/$id';
+  static String adminEditUser(String id) => '/users/$id';
+  static const String adminUserStats = '/users/admin/stats';
 
-  // ============ Meal Endpoints ============
-  static const String meals = '/meals'; // ✅ Already exists in your backend
-  static String mealById(String id) => '/meals/$id'; // ✅ Already exists in your backend
-  static const String addMeal = '/meals'; // ✅ POST endpoint for new meals
-  static String editMeal(String id) => '/meals/$id'; // ✅ PUT/PATCH endpoint
+  // Meal Endpoints (User logging)
+  static const String meals = '/meals';
+  static String mealById(String id) => '/meals/$id';
+  static const String mealCreate = '/meals';
+  static String mealUpdate(String id) => '/meals/$id';
+  static String mealDelete(String id) => '/meals/$id';
 
-  // ============ Workout Endpoints ============
-  static const String workouts = '/workouts'; // ✅ Already exists in your backend
-  static String workoutById(String id) => '/workouts/$id'; // ✅ Already exists in your backend
-  static const String addWorkout = '/workouts'; // ✅ POST endpoint for new workouts
-  static String editWorkout(String id) => '/workouts/$id'; // ✅ PUT/PATCH endpoint
+  //  Admin Food Endpoints (Database collection is 'foods')
+  static const String adminMeals = '/foods/admin/all';
+  static const String adminMealStats = '/foods/admin/stats';
 
-  // ============ Upload Endpoints ============
-  static const String uploadProfile = '/upload/profile'; // ✅ POST endpoint
-  static const String uploadMeal = '/upload/meal'; // ✅ POST endpoint
-  static const String uploadWorkout = '/upload/workout'; // ✅ POST endpoint
+  // Workout Endpoints
+  static String workoutById(String id) => '/workouts/$id';
+  static const String workoutCreate = '/workouts';
+  static String workoutUpdate(String id) => '/workouts/$id';
+  static String workoutDelete(String id) => '/workouts/$id';
+
+  //  Admin Workout Endpoints
+  static const String adminWorkouts = '/workouts/admin/all';
+  static const String adminWorkoutStats = '/workouts/admin/stats';
+  static const String adminWorkoutCreate = '/workouts/admin';
+  static String adminWorkoutUpdate(String id) => '/workouts/admin/$id';
+  static String adminWorkoutDelete(String id) => '/workouts/admin/$id';
+
+  // Progress Endpoints
+  static const String progress = '/progress';
+  static String progressById(String id) => '/progress/$id';
+  static const String progressCreate = '/progress';
+  static String progressUpdate(String id) => '/progress/$id';
+  static String progressDelete(String id) => '/progress/$id';
+
+  //  Upload Endpoints 
+  static const String uploadProfile = '/upload/profile';
+  static const String uploadMeal = '/upload/meal';
+  static const String uploadWorkout = '/upload/workout';
 }
