@@ -1,7 +1,131 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:nutri_nepal/core/api/api_client.dart';
+import 'package:nutri_nepal/core/api/api_endpoints.dart';
 
-class WorkoutScreen extends StatelessWidget {
+class UserWorkout {
+  final String id;
+  final String name;
+  final String category;
+  final String? description;
+  final String? thumbnail;
+  final String? youtubeUrl;
+  final String? duration;
+  final int? caloriesBurned;
+
+  UserWorkout({
+    required this.id,
+    required this.name,
+    required this.category,
+    this.description,
+    this.thumbnail,
+    this.youtubeUrl,
+    this.duration,
+    this.caloriesBurned,
+  });
+
+  factory UserWorkout.fromJson(Map<String, dynamic> json) {
+    String? thumb;
+    if (json['thumbnail'] != null) {
+      thumb = json['thumbnail'];
+    } else if (json['images'] != null && (json['images'] as List).isNotEmpty) {
+      thumb = (json['images'] as List)[0];
+    }
+
+    return UserWorkout(
+      id: json['_id'] is Map ? json['_id']['\$oid'] : (json['_id']?.toString() ?? ''),
+      name: json['name'] ?? 'Unknown Workout',
+      category: json['category'] ?? 'General',
+      description: json['description'],
+      thumbnail: thumb,
+      youtubeUrl: json['youtubeUrl'],
+      duration: json['duration']?.toString(),
+      caloriesBurned: json['caloriesBurned'] != null ? (json['caloriesBurned'] as num).toInt() : null,
+    );
+  }
+}
+
+class WorkoutScreen extends ConsumerStatefulWidget {
   const WorkoutScreen({super.key});
+
+  @override
+  ConsumerState<WorkoutScreen> createState() => _WorkoutScreenState();
+}
+
+class _WorkoutScreenState extends ConsumerState<WorkoutScreen> with SingleTickerProviderStateMixin {
+  List<UserWorkout> _workouts = [];
+  bool _isLoading = true;
+  String _selectedCategory = 'All';
+  late AnimationController _animationController;
+
+  final List<String> _categories = ['All', 'Strength', 'Cardio', 'Flexibility', 'Other'];
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fetchWorkouts();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchWorkouts() async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await ApiClient().dio.get(ApiEndpoints.publicWorkouts);
+      
+      if (response.statusCode == 200) {
+        List rawData = [];
+        if (response.data is List) {
+          rawData = response.data;
+        } else if (response.data['workouts'] is List) {
+          rawData = response.data['workouts'];
+        } else if (response.data['data'] is List) {
+          rawData = response.data['data'];
+        }
+
+        setState(() {
+          _workouts = rawData.map((e) => UserWorkout.fromJson(e)).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  List<UserWorkout> get _filteredWorkouts {
+    if (_selectedCategory == 'All') return _workouts;
+    return _workouts.where((w) => w.category.toLowerCase() == _selectedCategory.toLowerCase()).toList();
+  }
+
+  Future<void> _launchYouTube(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'strength':
+        return const Color(0xFFB85C00);
+      case 'cardio':
+        return const Color(0xFF1B4332);
+      case 'flexibility':
+        return Colors.purple;
+      default:
+        return Colors.blue;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,275 +134,367 @@ class WorkoutScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
         title: const Text(
-          'Workout Plan',
+          'Workouts',
           style: TextStyle(
             color: Color(0xFF1F2937),
-            fontSize: 20,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
             fontFamily: 'Montserrat',
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Color(0xFF1B4332)),
-            onPressed: () {},
+            icon: const Icon(Icons.refresh, color: Color(0xFF1B4332)),
+            onPressed: _fetchWorkouts,
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF1B4332)))
+          : Column(
+              children: [
+                // Category Filter with Better UI
+                Container(
+                  height: 60,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _categories.length,
+                    separatorBuilder: (context, index) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final category = _categories[index];
+                      final isSelected = _selectedCategory == category;
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedCategory = category),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFF1B4332) : Colors.white,
+                            borderRadius: BorderRadius.circular(25),
+                            border: Border.all(
+                              color: isSelected ? const Color(0xFF1B4332) : Colors.grey.shade300,
+                              width: 1.5,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(0xFF1B4332).withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ]
+                                : [],
+                          ),
+                          child: Center(
+                            child: Text(
+                              category,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                                fontSize: 14,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                fontFamily: 'Montserrat',
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                
+                // Workout List
+                Expanded(
+                  child: _filteredWorkouts.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.fitness_center, size: 80, color: Colors.grey.shade300),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No workouts found',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 16,
+                                  fontFamily: 'Montserrat',
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _fetchWorkouts,
+                          child: ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _filteredWorkouts.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 16),
+                            itemBuilder: (context, index) => _buildEnhancedWorkoutCard(_filteredWorkouts[index], index),
+                          ),
+                        ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildEnhancedWorkoutCard(UserWorkout workout, int index) {
+    final categoryColor = _getCategoryColor(workout.category);
+    
+    return TweenAnimationBuilder(
+      duration: Duration(milliseconds: 300 + (index * 100)),
+      tween: Tween<double>(begin: 0, end: 1),
+      builder: (context, double value, child) {
+        return Transform.translate(
+          offset: Offset(0, 50 * (1 - value)),
+          child: Opacity(
+            opacity: value,
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Active Plan Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1B4332), Color(0xFF2D6A4F)],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // Image Section with Gradient Overlay
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              child: Stack(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Peak Performance Plan',
+                  // Workout Image or Placeholder
+                  workout.thumbnail != null
+                      ? Image.network(
+                          ApiEndpoints.resolveUploadUrl(workout.thumbnail!),
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                        )
+                      : _buildPlaceholder(),
+                  
+                  // Gradient Overlay
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.6),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  // Category Badge
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.95),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        workout.category,
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: categoryColor,
                           fontFamily: 'Montserrat',
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          'ACTIVE',
-                          style: TextStyle(
+                    ),
+                  ),
+                  
+                  // YouTube Button (if available)
+                  if (workout.youtubeUrl != null && workout.youtubeUrl!.isNotEmpty)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: GestureDetector(
+                        onTap: () => _launchYouTube(workout.youtubeUrl!),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.play_arrow,
                             color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Montserrat',
+                            size: 20,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Week 3: Hypertrophy Phase. Focus on explosive movements and controlled eccentrics.',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontFamily: 'OpenSans',
+                    ),
+                ],
+              ),
+            ),
+            
+            // Content Section
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Workout Name
+                  Text(
+                    workout.name,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1F2937),
+                      fontFamily: 'Montserrat',
                     ),
                   ),
+                  
+                  // Description (if available)
+                  if (workout.description != null && workout.description!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      workout.description!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF6B7280),
+                        fontFamily: 'OpenSans',
+                      ),
+                    ),
+                  ],
+                  
                   const SizedBox(height: 16),
                   
-                  // ✅ FIXED: Wrapped in SingleChildScrollView to prevent overflow
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    child: Row(
-                      children: [
-                        _buildDayTab('Day 1', isSelected: true),
-                        const SizedBox(width: 8),
-                        _buildDayTab('Day 2'),
-                        const SizedBox(width: 8),
-                        _buildDayTab('Day 3'),
-                        const SizedBox(width: 8),
-                        _buildDayTab('Day 4'),
+                  // Stats Row (Duration & Calories)
+                  Row(
+                    children: [
+                      if (workout.duration != null && workout.duration!.isNotEmpty)
+                        _buildStatChip(
+                          Icons.access_time,
+                          '${workout.duration} min',
+                          Colors.orange,
+                        ),
+                      if (workout.caloriesBurned != null) ...[
+                        const SizedBox(width: 12),
+                        _buildStatChip(
+                          Icons.local_fire_department,
+                          '${workout.caloriesBurned} kcal',
+                          Colors.red,
+                        ),
                       ],
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Start Workout Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Starting: ${workout.name}'),
+                            backgroundColor: const Color(0xFF1B4332),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFB85C00),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.play_circle_outline, size: 22),
+                          SizedBox(width: 8),
+                          Text(
+                            'Start Workout',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Montserrat',
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-
-            const Text(
-              "Today's Exercises",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937),
-                fontFamily: 'Montserrat',
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Exercise 1
-            _buildExerciseCard(
-              'Barbell Back Squat',
-              'SETS: 4',
-              'REPS: 8-10',
-              'Keep chest up and drive through heels. Rest 120s between sets.',
-              Icons.fitness_center,
-              Colors.orange,
-            ),
-            const SizedBox(height: 12),
-
-            // Exercise 2
-            _buildExerciseCard(
-              'Bulgarian Split Squat',
-              'SETS: 3',
-              'REPS: 12',
-              'Elevate rear foot on bench. Focus on depth and stability.',
-              Icons.fitness_center,
-              Colors.orange,
-            ),
-            const SizedBox(height: 12),
-
-            // Exercise 3
-            _buildExerciseCard(
-              'Leg Extensions',
-              'SETS: 3',
-              'REPS: 15',
-              'Peak contraction at the top for 1 second. Squeeze quads hard.',
-              Icons.fitness_center,
-              Colors.orange,
-            ),
-            const SizedBox(height: 24),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFB85C00),
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.check_circle_outline, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Complete Workout',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Montserrat',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20), // Extra padding at bottom
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDayTab(String label, {bool isSelected = false}) {
+  Widget _buildPlaceholder() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? const Color(0xFF1B4332) : Colors.white70,
-          fontSize: 13,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          fontFamily: 'Montserrat',
+      height: 180,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFE0E0E0), Color(0xFFF5F5F5)],
         ),
       ),
+      child: const Icon(
+        Icons.fitness_center,
+        size: 64,
+        color: Color(0xFFBDBDBD),
+      ),
     );
   }
 
-  Widget _buildExerciseCard(String title, String sets, String reps, String description, IconData icon, Color color) {
+  Widget _buildStatChip(IconData icon, String label, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: color,
+              fontFamily: 'Montserrat',
             ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded( // ✅ Expanded ensures text doesn't overflow horizontally
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1F2937),
-                    fontFamily: 'Montserrat',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _buildExerciseDetail(sets),
-                    const SizedBox(width: 16),
-                    _buildExerciseDetail(reps),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF6B7280),
-                    fontFamily: 'OpenSans',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.bolt, color: Colors.orange, size: 20),
-            onPressed: () {},
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildExerciseDetail(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: Color(0xFF1B4332),
-        fontFamily: 'Montserrat',
       ),
     );
   }
