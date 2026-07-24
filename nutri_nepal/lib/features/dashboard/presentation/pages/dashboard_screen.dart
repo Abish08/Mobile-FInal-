@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nutri_nepal/features/dashboard/presentation/pages/weekly_meal_plan_screen.dart';
+import 'package:nutri_nepal/features/dashboard/presentation/pages/user_dashboard_screen.dart';
 import 'package:nutri_nepal/features/dashboard/presentation/pages/diet_recommendation_screen.dart';
 import 'package:nutri_nepal/features/dashboard/presentation/pages/workout_screen.dart';
 import 'package:nutri_nepal/features/dashboard/presentation/pages/daily_log_screen.dart';
@@ -9,32 +9,27 @@ class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardViewState();
+  State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardViewState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
-  // ✅ These are YOUR existing screens with full UI
   final List<Widget> _screens = [
-    const WeeklyMealPlanScreen(),       // Tab 0: Home
-    const DietRecommendationScreen(),   // Tab 1: Meals
-    const WorkoutScreen(),              // Tab 2: Workouts
-    const DailyLogScreen(),             // Tab 3: Log
-    const UserProfileScreen(),          // Tab 4: Profile
+    const UserDashboardScreen(),        // ✅ Tab 0: Home
+    const DietRecommendationScreen(),   // ✅ Tab 1: Meals
+    const WorkoutScreen(),              // ✅ Tab 2: Workouts
+    const DailyLogScreen(),             // ✅ Tab 3: Log
+    const UserProfileScreen(),          // ✅ Tab 4: Profile
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],  // ✅ This shows the selected screen
+      body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;  // ✅ This updates the screen
-          });
-        },
+        onTap: (index) => setState(() => _selectedIndex = index),
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFF1B4332),
         unselectedItemColor: const Color(0xFF6B7280),
