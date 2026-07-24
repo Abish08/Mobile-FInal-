@@ -1,17 +1,34 @@
 import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  constructor(private reflector: Reflector) { super(); }
-  canActivate(ctx: ExecutionContext) {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [ctx.getHandler(), ctx.getClass()]);
-    return isPublic ? true : super.canActivate(ctx);
+  constructor(private reflector: Reflector) { 
+    super(); 
   }
+
+  async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    // Check for public routes - look at both handler and class
+    const isPublic = this.reflector.getAllAndOverride<boolean>('isPublic', [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ]);
+
+    // If route is marked public, allow access without authentication
+    if (isPublic) {
+      return true;
+    }
+
+    // Otherwise, proceed with JWT authentication
+    const canActivate = await super.canActivate(ctx);
+    return canActivate as boolean;
+  }
+
   handleRequest(err: any, user: any) {
-    if (err || !user) throw err || new UnauthorizedException('Not authorized');
+    if (err || !user) {
+      throw err || new UnauthorizedException('Not authorized');
+    }
     return user;
   }
 }
