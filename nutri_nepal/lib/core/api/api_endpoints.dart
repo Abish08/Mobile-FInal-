@@ -89,4 +89,10 @@ class ApiEndpoints {
   static const String uploadProfile = '/upload/profile';
   static const String uploadMeal = '/upload/meal';
   static const String uploadWorkout = '/upload/workout';
+
+    //  Public Food Endpoints (For Users)
+  static const String publicFoods = '/foods'; // Fetches all approved foods
+
+   // User Workout Endpoints
+  static const String publicWorkouts = '/workouts/catalog';
 }
