@@ -12,7 +12,7 @@ export class UploadController {  // ✅ Make sure 'export' is here!
     return {
       success: true,
       message: 'Profile picture uploaded successfully',
-      imageUrl: `http://192.168.101.10:3000/uploads/${file.filename}`,
+      imageUrl: `http://192.168.101.5:3000/uploads/${file.filename}`,
       filename: file.filename,
     };
   }
@@ -23,7 +23,7 @@ export class UploadController {  // ✅ Make sure 'export' is here!
     return {
       success: true,
       message: 'Meal picture uploaded successfully',
-      imageUrl: `http://192.168.101.10:3000/uploads/${file.filename}`,
+      imageUrl: `http://192.168.101.5:3000/uploads/${file.filename}`,
       filename: file.filename,
     };
   }
