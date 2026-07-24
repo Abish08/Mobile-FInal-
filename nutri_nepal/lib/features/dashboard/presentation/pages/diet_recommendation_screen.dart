@@ -73,7 +73,7 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
       final response = await apiClient.dio.get(ApiEndpoints.publicFoods);
 
       if (response.statusCode == 200) {
-        final List foodsData = response.data['foods'];
+        final List foodsData = response.data['foods'] ?? response.data;
         setState(() {
           _allFoods = foodsData.map((e) => FoodItem.fromJson(e)).toList();
           _applyFilter();
@@ -103,6 +103,45 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
       _selectedMealType = type;
       _applyFilter();
     });
+  }
+
+  // ✅ NEW: Function to actually log the meal to the backend
+  Future<void> _logMeal(FoodItem food) async {
+    try {
+      final apiClient = ApiClient();
+      final mealData = {
+        'name': food.name,
+        'category': food.category,
+        'calories': food.calories,
+        'protein': food.protein,
+        'carbs': food.carbs,
+        'fats': food.fats,
+      };
+
+      final response = await apiClient.dio.post(
+        ApiEndpoints.meals, // Uses the /meals endpoint to create a log
+        data: mealData,
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ ${food.name} logged successfully!'),
+            backgroundColor: const Color(0xFF1B4332),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error logging meal: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -136,7 +175,6 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF1B4332)))
           : Column(
               children: [
-                // Header Section
                 Container(
                   padding: const EdgeInsets.all(16),
                   color: Colors.white,
@@ -152,8 +190,6 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
-                      // ✅ FIXED: Scrollable meal type tabs
                       SizedBox(
                         height: 44,
                         child: ListView.separated(
@@ -204,27 +240,17 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
                     ],
                   ),
                 ),
-                
-                // ✅ FIXED: Scrollable food list
                 Expanded(
                   child: _filteredFoods.isEmpty
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
-                                Icons.restaurant_outlined,
-                                size: 64,
-                                color: Colors.grey.shade400,
-                              ),
+                              Icon(Icons.restaurant_outlined, size: 64, color: Colors.grey.shade400),
                               const SizedBox(height: 16),
                               Text(
                                 'No meals found for $_selectedMealType',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 16,
-                                  fontFamily: 'Montserrat',
-                                ),
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 16, fontFamily: 'Montserrat'),
                               ),
                             ],
                           ),
@@ -263,7 +289,6 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image Section
           ClipRRect(
             borderRadius: BorderRadius.vertical(top: Radius.circular(isFeatured ? 20 : 16)),
             child: Stack(
@@ -277,22 +302,17 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
                         errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
                       )
                     : _buildPlaceholderImage(),
-                // Gradient overlay
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.4),
-                        ],
+                        colors: [Colors.transparent, Colors.black.withOpacity(0.4)],
                       ),
                     ),
                   ),
                 ),
-                // Category badge
                 Positioned(
                   top: 12,
                   left: 12,
@@ -304,20 +324,13 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
                     ),
                     child: Text(
                       food.category,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1B4332),
-                        fontFamily: 'Montserrat',
-                      ),
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1B4332), fontFamily: 'Montserrat'),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          
-          // Content Section
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -325,16 +338,9 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
               children: [
                 Text(
                   food.name,
-                  style: TextStyle(
-                    fontSize: isFeatured ? 22 : 18,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1F2937),
-                    fontFamily: 'Montserrat',
-                  ),
+                  style: TextStyle(fontSize: isFeatured ? 22 : 18, fontWeight: FontWeight.bold, color: const Color(0xFF1F2937), fontFamily: 'Montserrat'),
                 ),
                 const SizedBox(height: 16),
-                
-                // Macros Grid
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -344,30 +350,17 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
                     _buildMacroItem('${food.fats}g', 'fats', Colors.red),
                   ],
                 ),
-                
                 const SizedBox(height: 16),
-                
-                // Log Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('✅ ${food.name} logged successfully!'),
-                          backgroundColor: const Color(0xFF1B4332),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      );
-                    },
+                    // ✅ UPDATED: Calls the real logging function
+                    onPressed: () => _logMeal(food),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFB85C00),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
                     child: const Row(
@@ -375,14 +368,7 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
                       children: [
                         Icon(Icons.add_circle_outline, size: 20),
                         SizedBox(width: 8),
-                        Text(
-                          'Log This Meal',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Montserrat',
-                          ),
-                        ),
+                        Text('Log This Meal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Montserrat')),
                       ],
                     ),
                   ),
@@ -400,34 +386,15 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
       height: 200,
       width: double.infinity,
       color: const Color(0xFFF3F4F6),
-      child: const Icon(
-        Icons.restaurant,
-        size: 80,
-        color: Color(0xFF6B7280),
-      ),
+      child: const Icon(Icons.restaurant, size: 80, color: Color(0xFF6B7280)),
     );
   }
 
   Widget _buildMacroItem(String value, String label, Color color) {
     return Column(
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-            fontFamily: 'Montserrat',
-          ),
-        ),
-        Text(
-          label.toUpperCase(),
-          style: TextStyle(
-            fontSize: 10,
-            color: const Color(0xFF6B7280),
-            fontFamily: 'OpenSans',
-          ),
-        ),
+        Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color, fontFamily: 'Montserrat')),
+        Text(label.toUpperCase(), style: TextStyle(fontSize: 10, color: const Color(0xFF6B7280), fontFamily: 'OpenSans')),
       ],
     );
   }

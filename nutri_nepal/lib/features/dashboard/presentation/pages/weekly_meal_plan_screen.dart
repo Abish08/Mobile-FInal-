@@ -1,7 +1,104 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:nutri_nepal/core/api/api_client.dart';
+import 'package:nutri_nepal/core/api/api_endpoints.dart';
 
-class WeeklyMealPlanScreen extends StatelessWidget {
+class WeeklyMealPlanScreen extends ConsumerStatefulWidget {
   const WeeklyMealPlanScreen({super.key});
+
+  @override
+  ConsumerState<WeeklyMealPlanScreen> createState() => _WeeklyMealPlanScreenState();
+}
+
+class _WeeklyMealPlanScreenState extends ConsumerState<WeeklyMealPlanScreen> {
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _allMeals = [];
+  int _selectedDayIndex = 0;
+  List<DateTime> _weekDays = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _generateWeekDays();
+    _fetchMeals();
+  }
+
+  void _generateWeekDays() {
+    final today = DateTime.now();
+    _weekDays = List.generate(7, (index) {
+      return DateTime(today.year, today.month, today.day + index);
+    });
+  }
+
+  Future<void> _fetchMeals() async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await ApiClient().dio.get(ApiEndpoints.meals);
+      if (response.statusCode == 200) {
+        List<dynamic> data = response.data['data'] ?? response.data;
+        setState(() {
+          _allMeals = data.map((e) => e as Map<String, dynamic>).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching meals: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
+  List<Map<String, dynamic>> get _selectedDayMeals {
+    final selectedDate = _weekDays[_selectedDayIndex];
+    return _allMeals.where((meal) {
+      final dateStr = meal['createdAt'] ?? meal['date'];
+      if (dateStr == null) return false;
+      try {
+        final date = DateTime.parse(dateStr.toString());
+        return date.year == selectedDate.year && 
+               date.month == selectedDate.month && 
+               date.day == selectedDate.day;
+      } catch (e) {
+        return false;
+      }
+    }).toList();
+  }
+
+  int get _totalCalories => _selectedDayMeals.fold<int>(0, (sum, meal) {
+    final cals = meal['calories'];
+    if (cals == null) return sum;
+    final calValue = cals is int ? cals : (cals is double ? cals.toInt() : 0);
+    return sum + calValue;
+  });
+
+  int get _totalProtein => _selectedDayMeals.fold<int>(0, (sum, meal) {
+    final p = meal['protein'];
+    if (p == null) return sum;
+    final pValue = p is int ? p : (p is double ? p.toInt() : 0);
+    return sum + pValue;
+  });
+
+  int get _totalCarbs => _selectedDayMeals.fold<int>(0, (sum, meal) {
+    final c = meal['carbs'];
+    if (c == null) return sum;
+    final cValue = c is int ? c : (c is double ? c.toInt() : 0);
+    return sum + cValue;
+  });
+
+  String _formatDay(DateTime date) {
+    return DateFormat('EEE').format(date).toUpperCase();
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('d').format(date);
+  }
+
+  String _formatMonthRange() {
+    if (_weekDays.isEmpty) return '';
+    final start = _weekDays.first;
+    final end = _weekDays.last;
+    return '${DateFormat('MMMM d').format(start)} - ${DateFormat('d').format(end)}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,184 +123,129 @@ class WeeklyMealPlanScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Date Range
-            const Text(
-              'July 15 - 21',
-              style: TextStyle(
-                color: Color(0xFF6B7280),
-                fontSize: 14,
-                fontFamily: 'OpenSans',
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Week Days - FIXED with padding
-            Container(
-              height: 60,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  _buildDayChip('MON', '15', isSelected: true),
-                  _buildDayChip('TUE', '16'),
-                  _buildDayChip('WED', '17'),
-                  _buildDayChip('THU', '18'),
-                  _buildDayChip('FRI', '19'),
-                  _buildDayChip('SAT', '20'),
-                  _buildDayChip('SUN', '21'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Calories Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1B4332), Color(0xFF2D6A4F)],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'CALORIES',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontFamily: 'Montserrat',
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        '1,840',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Montserrat',
-                        ),
-                      ),
-                      Text(
-                        '/ 2,200',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          fontFamily: 'OpenSans',
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF1B4332)))
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildMacroItem('124g', 'PROTEIN'),
-                      const SizedBox(height: 12),
-                      _buildMacroItem('32g', 'FIBER'),
+                      const Text(
+                        'This Week',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1F2937), fontFamily: 'Montserrat'),
+                      ),
+                      Text(
+                        _formatMonthRange(),
+                        style: const TextStyle(color: Color(0xFF6B7280), fontSize: 14, fontFamily: 'OpenSans'),
+                      ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                SizedBox(
+                  height: 70,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _weekDays.length,
+                    separatorBuilder: (context, index) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final isSelected = _selectedDayIndex == index;
+                      final date = _weekDays[index];
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedDayIndex = index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 55,
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFF1B4332) : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: isSelected ? [BoxShadow(color: const Color(0xFF1B4332).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : [],
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(_formatDay(date), style: TextStyle(color: isSelected ? Colors.white70 : const Color(0xFF6B7280), fontSize: 12, fontFamily: 'Montserrat')),
+                              const SizedBox(height: 4),
+                              Text(_formatDate(date), style: TextStyle(color: isSelected ? Colors.white : const Color(0xFF1F2937), fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Montserrat')),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _fetchMeals,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(colors: [Color(0xFF1B4332), Color(0xFF2D6A4F)]),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('CALORIES', style: TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'Montserrat')),
+                                    const SizedBox(height: 8),
+                                    Text('$_totalCalories', style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, fontFamily: 'Montserrat')),
+                                    const Text('/ 2,200', style: TextStyle(color: Colors.white70, fontSize: 14, fontFamily: 'OpenSans')),
+                                  ],
+                                ),
+                                Column(
+                                  children: [
+                                    _buildMacroItem('$_totalProtein g', 'PROTEIN'),
+                                    const SizedBox(height: 12),
+                                    _buildMacroItem('$_totalCarbs g', 'CARBS'),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            "Today's Meals",
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937), fontFamily: 'Montserrat'),
+                          ),
+                          const SizedBox(height: 16),
+                          if (_selectedDayMeals.isEmpty)
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+                              child: const Center(child: Text('No meals planned for this day', style: TextStyle(color: Color(0xFF6B7280)))),
+                            )
+                          else
+                            ..._selectedDayMeals.map((meal) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: _buildMealCard(meal),
+                                )),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
-
-            // Meals List
-            const Text(
-              "Today's Meals",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937),
-                fontFamily: 'Montserrat',
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            _buildMealCard(
-              'BREAKFAST',
-              'Berry Chia Smoothie Bowl',
-              '340 kcal • 08:30 AM',
-              Icons.breakfast_dining,
-              Colors.orange,
-            ),
-            const SizedBox(height: 12),
-
-            _buildMealCard(
-              'LUNCH',
-              'Grilled Chicken & Quinoa',
-              '520 kcal • 12:30 PM',
-              Icons.lunch_dining,
-              Colors.green,
-            ),
-            const SizedBox(height: 12),
-
-            _buildMealCard(
-              'SNACK',
-              'Nut & Fruit Medley',
-              '180 kcal • 04:00 PM',
-              Icons.cookie,
-              Colors.brown,
-            ),
-            const SizedBox(height: 12),
-
-            _buildMealCard(
-              'DINNER',
-              'Lemon Herb Baked Salmon',
-              '480 kcal • 07:30 PM',
-              Icons.dinner_dining,
-              Colors.blue,
-            ),
-          ],
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Add Meal feature coming soon!'), backgroundColor: Color(0xFFB85C00)),
+          );
+        },
         backgroundColor: const Color(0xFFB85C00),
         child: const Icon(Icons.add, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildDayChip(String day, String date, {bool isSelected = false}) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF1B4332) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            day,
-            style: TextStyle(
-              color: isSelected ? Colors.white70 : const Color(0xFF6B7280),
-              fontSize: 12,
-              fontFamily: 'Montserrat',
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            date,
-            style: TextStyle(
-              color: isSelected ? Colors.white : const Color(0xFF1F2937),
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Montserrat',
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -211,84 +253,42 @@ class WeeklyMealPlanScreen extends StatelessWidget {
   Widget _buildMacroItem(String value, String label) {
     return Column(
       children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Montserrat',
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 10,
-            fontFamily: 'OpenSans',
-          ),
-        ),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Montserrat')),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10, fontFamily: 'OpenSans')),
       ],
     );
   }
 
-  Widget _buildMealCard(String type, String title, String subtitle, IconData icon, Color color) {
+  Widget _buildMealCard(Map<String, dynamic> meal) {
+    final calories = meal['calories'] ?? 0;
+    final protein = meal['protein'] ?? 0;
+    final name = meal['name'] ?? 'Unknown Meal';
+    final category = meal['category'] ?? 'Meal';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 28),
+            decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.restaurant, color: Colors.orange, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  type,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Montserrat',
-                  ),
-                ),
+                Text(category.toUpperCase(), style: const TextStyle(color: Colors.orange, fontSize: 11, fontWeight: FontWeight.w600, fontFamily: 'Montserrat')),
                 const SizedBox(height: 4),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1F2937),
-                    fontFamily: 'Montserrat',
-                  ),
-                ),
+                Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1F2937), fontFamily: 'Montserrat')),
                 const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF6B7280),
-                    fontFamily: 'OpenSans',
-                  ),
-                ),
+                Text('$calories kcal • ${protein}g Protein', style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280), fontFamily: 'OpenSans')),
               ],
             ),
           ),
