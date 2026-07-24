@@ -35,9 +35,12 @@ export class WorkoutsService {
     if (!deleted) throw new NotFoundException('Workout not found');
   }
 
-  // --- ADMIN METHODS ---
+  // --- ADMIN & CATALOG METHODS ---
   async findAllAdmin(search?: string, category?: string) {
-    const query: any = {};
+    // ✅ FIX: $ne: false safely matches 'true' AND missing fields, preventing Mongoose Cast Errors!
+    const query: any = { 
+      isApproved: { $ne: false } 
+    }; 
     
     if (search) {
       query.name = { $regex: search, $options: 'i' };
@@ -47,7 +50,7 @@ export class WorkoutsService {
     }
 
     const workouts = await this.workoutModel.find(query).sort({ createdAt: -1 });
-    const totalItems = await this.workoutModel.countDocuments();
+    const totalItems = await this.workoutModel.countDocuments(query); 
     
     return { success: true, workouts, totalItems };
   }
@@ -69,7 +72,7 @@ export class WorkoutsService {
     return { success: true, message: 'Workout deleted' };
   }
 
-  // ✅ NEW: IMAGE HANDLING METHODS
+  // ✅ IMAGE HANDLING METHODS
   async updateThumbnail(id: string, thumbnailPath: string) {
     const workout = await this.workoutModel.findById(id);
     if (!workout) throw new NotFoundException('Workout not found');
