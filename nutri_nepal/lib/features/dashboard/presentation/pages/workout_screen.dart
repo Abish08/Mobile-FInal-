@@ -155,56 +155,57 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> with SingleTicker
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF1B4332)))
           : Column(
               children: [
-                // Category Filter with Better UI
-                Container(
-                  height: 60,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _categories.length,
-                    separatorBuilder: (context, index) => const SizedBox(width: 8),
-                    itemBuilder: (context, index) {
-                      final category = _categories[index];
-                      final isSelected = _selectedCategory == category;
-                      return GestureDetector(
-                        onTap: () => setState(() => _selectedCategory = category),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFF1B4332) : Colors.white,
-                            borderRadius: BorderRadius.circular(25),
-                            border: Border.all(
-                              color: isSelected ? const Color(0xFF1B4332) : Colors.grey.shade300,
-                              width: 1.5,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: const Color(0xFF1B4332).withOpacity(0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ]
-                                : [],
-                          ),
-                          child: Center(
-                            child: Text(
-                              category,
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : const Color(0xFF6B7280),
-                                fontSize: 14,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                fontFamily: 'Montserrat',
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                // Category Filter with FIXED TEXT OVERFLOW
+             // Category Filter with FIXED TEXT OVERFLOW
+Container(
+  height: 50,
+  padding: const EdgeInsets.symmetric(vertical: 8),
+  child: ListView.separated(
+    scrollDirection: Axis.horizontal,
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    itemCount: _categories.length,
+    separatorBuilder: (context, index) => const SizedBox(width: 8),
+    itemBuilder: (context, index) {
+      final category = _categories[index];
+      final isSelected = _selectedCategory == category;
+      return GestureDetector(
+        onTap: () => setState(() => _selectedCategory = category),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF1B4332) : Colors.white,
+            borderRadius: BorderRadius.circular(25),
+            border: Border.all(
+              color: isSelected ? const Color(0xFF1B4332) : Colors.grey.shade300,
+              width: 1.5,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF1B4332).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Center(
+            child: Text(
+              category,
+              style: TextStyle(
+                color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontFamily: 'Montserrat',
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  ),
+),
                 
                 // Workout List
                 Expanded(
