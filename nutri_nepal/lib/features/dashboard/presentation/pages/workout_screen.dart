@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
 import 'package:nutri_nepal/core/api/api_client.dart';
 import 'package:nutri_nepal/core/api/api_endpoints.dart';
 
@@ -58,6 +59,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> with SingleTicker
   bool _isLoading = true;
   String _selectedCategory = 'All';
   late AnimationController _animationController;
+  String? _userId;
 
   final List<String> _categories = ['All', 'Strength', 'Cardio', 'Flexibility', 'Other'];
 
@@ -65,7 +67,23 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> with SingleTicker
   void initState() {
     super.initState();
     _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _fetchUserId();
     _fetchWorkouts();
+  }
+
+  Future<void> _fetchUserId() async {
+    try {
+      final apiClient = ApiClient();
+      final response = await apiClient.dio.get(ApiEndpoints.getProfile);
+      if (response.statusCode == 200) {
+        final userData = response.data['data'] ?? response.data;
+        setState(() {
+          _userId = userData['_id'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching user ID: $e');
+    }
   }
 
   @override
@@ -119,21 +137,41 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> with SingleTicker
     }
   }
 
-  // ✅ NEW: Function to actually log the workout to the backend
+  // ✅ FULLY FIXED LOGGING FUNCTION
   Future<void> _logWorkout(UserWorkout workout) async {
+    if (_userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login first'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
     try {
       final apiClient = ApiClient();
+      
+      // ✅ THE ULTIMATE FIX: 
+      // 1. 'name' satisfies Mongoose Schema
+      // 2. 'exerciseName' satisfies DTO Validation
+      // 3. 'duration' is sent as a String to prevent Mongoose Cast Errors
       final workoutData = {
-        'name': workout.name,
-        'category': workout.category,
-        'duration': int.tryParse(workout.duration ?? '0') ?? 0,
+        'name': workout.name,           
+        'exerciseName': workout.name,   
+        'category': workout.category,   
+        'duration': workout.duration ?? '0', // ✅ Sent as String
         'caloriesBurned': workout.caloriesBurned ?? 0,
+        'userId': _userId,
+        'sets': 1, 
+        'reps': 1, 
       };
 
+      debugPrint('🔍 SENDING WORKOUT DATA: $workoutData');
+
       final response = await apiClient.dio.post(
-        ApiEndpoints.workoutCreate, // Uses the /workouts endpoint to create a log
+        ApiEndpoints.workoutCreate,
         data: workoutData,
       );
+
+      debugPrint('✅ RESPONSE: ${response.data}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -145,10 +183,22 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> with SingleTicker
           ),
         );
       }
-    } catch (e) {
+    } on DioException catch (e) {
+      debugPrint('❌ DIO ERROR DETAILS: $e');
+      debugPrint('❌ RESPONSE DATA: ${e.response?.data}');
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Error logging workout: $e'),
+          content: Text('❌ Error: ${e.response?.data['message'] ?? e.message}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      debugPrint('❌ GENERAL ERROR: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error: ${e.toString()}'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -305,7 +355,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> with SingleTicker
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      // ✅ UPDATED: Calls the real logging function
                       onPressed: () => _logWorkout(workout),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFB85C00),

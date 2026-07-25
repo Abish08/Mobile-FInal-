@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import 'package:nutri_nepal/core/api/api_client.dart';
 import 'package:nutri_nepal/core/api/api_endpoints.dart';
 
@@ -57,13 +58,30 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
   List<FoodItem> _filteredFoods = [];
   bool _isLoading = true;
   String _selectedMealType = 'All';
+  String? _userId;
 
   final List<String> _mealTypes = ['All', 'Breakfast', 'Lunch', 'Dinner', 'Snacks'];
 
   @override
   void initState() {
     super.initState();
+    _fetchUserId();
     _fetchFoods();
+  }
+
+  Future<void> _fetchUserId() async {
+    try {
+      final apiClient = ApiClient();
+      final response = await apiClient.dio.get(ApiEndpoints.getProfile);
+      if (response.statusCode == 200) {
+        final userData = response.data['data'] ?? response.data;
+        setState(() {
+          _userId = userData['_id'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching user ID: $e');
+    }
   }
 
   Future<void> _fetchFoods() async {
@@ -105,23 +123,34 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
     });
   }
 
-  // ✅ NEW: Function to actually log the meal to the backend
   Future<void> _logMeal(FoodItem food) async {
+    if (_userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login first'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
     try {
       final apiClient = ApiClient();
       final mealData = {
-        'name': food.name,
+        'mealName': food.name, // ✅ FIXED: Backend expects 'mealName', not 'name'
         'category': food.category,
         'calories': food.calories,
         'protein': food.protein,
         'carbs': food.carbs,
         'fats': food.fats,
+        'userId': _userId,
       };
 
+      debugPrint('🔍 SENDING MEAL DATA: $mealData');
+
       final response = await apiClient.dio.post(
-        ApiEndpoints.meals, // Uses the /meals endpoint to create a log
+        ApiEndpoints.meals,
         data: mealData,
       );
+
+      debugPrint('✅ RESPONSE: ${response.data}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -133,10 +162,22 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
           ),
         );
       }
-    } catch (e) {
+    } on DioException catch (e) {
+      debugPrint('❌ DIO ERROR DETAILS: $e');
+      debugPrint('❌ RESPONSE DATA: ${e.response?.data}');
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Error logging meal: $e'),
+          content: Text('❌ Error: ${e.response?.data['message'] ?? e.message}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      debugPrint('❌ GENERAL ERROR: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error: ${e.toString()}'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -354,7 +395,6 @@ class _DietRecommendationScreenState extends ConsumerState<DietRecommendationScr
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    // ✅ UPDATED: Calls the real logging function
                     onPressed: () => _logMeal(food),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFB85C00),

@@ -11,7 +11,15 @@ export class WorkoutsService {
 
   // --- EXISTING USER METHODS ---
   async create(dto: any) {
-    return this.workoutModel.create(dto);
+    // ✅ THE FIX: Reconstruct 'name' and 'category'. 
+    // Fallback 'category' is now 'Other' to match your Mongoose enum!
+    const workoutData = {
+      ...dto,
+      name: dto.name || dto.exerciseName || 'Unknown Workout',
+      category: dto.category || 'Other', 
+    };
+    
+    return this.workoutModel.create(workoutData);
   }
 
   async findAll(userId: string) {
@@ -37,7 +45,6 @@ export class WorkoutsService {
 
   // --- ADMIN & CATALOG METHODS ---
   async findAllAdmin(search?: string, category?: string) {
-    // ✅ FIX: $ne: false safely matches 'true' AND missing fields, preventing Mongoose Cast Errors!
     const query: any = { 
       isApproved: { $ne: false } 
     }; 
@@ -56,7 +63,12 @@ export class WorkoutsService {
   }
 
   async createAdminWorkout(dto: any) {
-    const created = await this.workoutModel.create(dto);
+    const workoutData = {
+      ...dto,
+      name: dto.name || dto.exerciseName || 'Unknown Workout',
+      category: dto.category || 'Other', // ✅ Changed to 'Other'
+    };
+    const created = await this.workoutModel.create(workoutData);
     return { success: true, data: created };
   }
 

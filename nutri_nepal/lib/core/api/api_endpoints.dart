@@ -6,7 +6,7 @@ class ApiEndpoints {
 
   // Configuration
   static const bool isPhysicalDevice = true;
-  static const String _ipAddress = '192.168.101.5';
+  static const String _ipAddress = '192.168.101.15'; // ✅ Updated to your current IP
   static const int _port = 3000;
 
   // Base URLs
@@ -22,10 +22,28 @@ class ApiEndpoints {
   static String get mediaServerUrl => serverUrl;
   static String get profileImages => '$mediaServerUrl/uploads';
 
+  // ✅ FIXED: Automatically rewrites old database IPs to the current mediaServerUrl
   static String resolveUploadUrl(String raw, {String? defaultFolder}) {
     final value = raw.trim().replaceAll('\\', '/');
     if (value.isEmpty) return '';
-    if (value.startsWith('http://') || value.startsWith('https://')) return value;
+    
+    // Handle absolute URLs (e.g., old database entries with 192.168.101.10)
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      try {
+        final uri = Uri.parse(value);
+        // If it's one of our media URLs, rewrite it to use the current mediaServerUrl
+        if (uri.path.startsWith('/uploads/')) {
+          return '$mediaServerUrl${uri.path}${uri.query.isEmpty ? '' : '?${uri.query}'}';
+        }
+        // For any other external absolute URL, return it as-is
+        return value;
+      } catch (e) {
+        // If parsing fails, just return the original value
+        return value;
+      }
+    }
+    
+    // Handle relative paths
     if (value.startsWith('/uploads/')) return '$mediaServerUrl$value';
     if (value.startsWith('uploads/')) return '$mediaServerUrl/$value';
     if (value.contains('/')) return '$profileImages/$value';
@@ -47,7 +65,7 @@ class ApiEndpoints {
   static const String getProfile = '/users/me';
   static const String editProfile = '/users/profile';
 
-  //  Admin User Endpoints
+  // Admin User Endpoints
   static const String adminUsers = '/users';
   static String adminUserById(String id) => '/users/$id';
   static String adminDeleteUser(String id) => '/users/$id';
@@ -61,7 +79,7 @@ class ApiEndpoints {
   static String mealUpdate(String id) => '/meals/$id';
   static String mealDelete(String id) => '/meals/$id';
 
-  //  Admin Food Endpoints (Database collection is 'foods')
+  // Admin Food Endpoints (Database collection is 'foods')
   static const String adminMeals = '/foods/admin/all';
   static const String adminMealStats = '/foods/admin/stats';
 
@@ -71,7 +89,7 @@ class ApiEndpoints {
   static String workoutUpdate(String id) => '/workouts/$id';
   static String workoutDelete(String id) => '/workouts/$id';
 
-  //  Admin Workout Endpoints
+  // Admin Workout Endpoints
   static const String adminWorkouts = '/workouts/admin/all';
   static const String adminWorkoutStats = '/workouts/admin/stats';
   static const String adminWorkoutCreate = '/workouts/admin';
@@ -85,14 +103,14 @@ class ApiEndpoints {
   static String progressUpdate(String id) => '/progress/$id';
   static String progressDelete(String id) => '/progress/$id';
 
-  //  Upload Endpoints 
+  // Upload Endpoints 
   static const String uploadProfile = '/upload/profile';
   static const String uploadMeal = '/upload/meal';
   static const String uploadWorkout = '/upload/workout';
 
-    //  Public Food Endpoints (For Users)
+  // Public Food Endpoints (For Users)
   static const String publicFoods = '/foods'; // Fetches all approved foods
 
-   // User Workout Endpoints
+  // User Workout Endpoints
   static const String publicWorkouts = '/workouts/catalog';
 }
