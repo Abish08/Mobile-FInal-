@@ -10,7 +10,8 @@ export class Meal {
   @Prop({ required: true }) protein!: number;
   @Prop({ required: true }) carbs!: number;
   @Prop({ required: true }) fats!: number;
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true }) userId!: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  userId!: Types.ObjectId;
   @Prop({ type: Date, default: Date.now }) eatenAt!: Date;
 }
 

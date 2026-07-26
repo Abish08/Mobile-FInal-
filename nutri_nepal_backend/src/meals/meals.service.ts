@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, QueryFilter } from 'mongoose';
 import { Meal, MealDocument } from './schemas/meal.schema';
-import { CreateMealDto } from './dto/create-meal.dto';
 import { UpdateMealDto } from './dto/update-meal.dto';
 
 @Injectable()
@@ -11,38 +10,39 @@ export class MealsService {
 
   // USER METHODS (Keep existing functionality)
 
-
-  async create(dto: any) { return this.mealModel.create(dto); }
-  
-  async findAll(userId: string) { 
-    return this.mealModel.find({ userId }).sort({ eatenAt: -1 }); 
-  }
-  
-  async findById(id: string) { 
-    const meal = await this.mealModel.findById(id); 
-    if (!meal) throw new NotFoundException('Meal not found'); 
-    return meal; 
-  }
-  
-  async update(id: string, dto: UpdateMealDto) { 
-    const updated = await this.mealModel.findByIdAndUpdate(id, dto, { new: true }); 
-    if (!updated) throw new NotFoundException('Meal not found'); 
-    return updated; 
-  }
-  
-  async remove(id: string) { 
-    const deleted = await this.mealModel.findByIdAndDelete(id); 
-    if (!deleted) throw new NotFoundException('Meal not found'); 
-    return deleted; 
+  async create(dto: Partial<Meal>) {
+    return this.mealModel.create(dto);
   }
 
+  async findAll(userId: string) {
+    return this.mealModel.find({ userId }).sort({ eatenAt: -1 });
+  }
+
+  async findById(id: string) {
+    const meal = await this.mealModel.findById(id);
+    if (!meal) throw new NotFoundException('Meal not found');
+    return meal;
+  }
+
+  async update(id: string, dto: UpdateMealDto) {
+    const updated = await this.mealModel.findByIdAndUpdate(id, dto, {
+      returnDocument: 'after',
+    });
+    if (!updated) throw new NotFoundException('Meal not found');
+    return updated;
+  }
+
+  async remove(id: string) {
+    const deleted = await this.mealModel.findByIdAndDelete(id);
+    if (!deleted) throw new NotFoundException('Meal not found');
+    return deleted;
+  }
 
   //  NEW: ADMIN METHODS (Food Management)
- 
 
   async findAllAdmin(search?: string, category?: string) {
-    const query: any = {};
-    
+    const query: QueryFilter<MealDocument> = {};
+
     if (search) {
       query.name = { $regex: search, $options: 'i' };
     }
@@ -52,9 +52,11 @@ export class MealsService {
 
     const meals = await this.mealModel.find(query).sort({ createdAt: -1 });
     const totalItems = await this.mealModel.countDocuments();
-    
+
     // Note: If your Meal schema doesn't have a 'status' field yet, this will just return 0
-    const pendingApproval = await this.mealModel.countDocuments({ status: 'pending' }); 
+    const pendingApproval = await this.mealModel.countDocuments({
+      status: 'pending',
+    });
 
     return {
       success: true,
@@ -66,11 +68,13 @@ export class MealsService {
 
   async getAdminStats() {
     const totalItems = await this.mealModel.countDocuments();
-    const pendingApproval = await this.mealModel.countDocuments({ status: 'pending' });
-    
-    return { 
-      success: true, 
-      stats: { totalItems, pendingApproval } 
+    const pendingApproval = await this.mealModel.countDocuments({
+      status: 'pending',
+    });
+
+    return {
+      success: true,
+      stats: { totalItems, pendingApproval },
     };
   }
 }

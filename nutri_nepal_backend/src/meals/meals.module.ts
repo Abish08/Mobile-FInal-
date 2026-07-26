@@ -5,7 +5,9 @@ import { MealsController } from './meals.controller';
 import { MealsService } from './meals.service';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Meal.name, schema: MealSchema }])],
+  imports: [
+    MongooseModule.forFeature([{ name: Meal.name, schema: MealSchema }]),
+  ],
   controllers: [MealsController],
   providers: [MealsService],
   exports: [MealsService],
