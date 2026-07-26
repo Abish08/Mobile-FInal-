@@ -1,29 +1,58 @@
-import { Controller, Post, UploadedFile, UseInterceptors, Get, Param, Res } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Res,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
-import { join } from 'path';
 import { existsSync } from 'fs';
+import { join } from 'path';
+import { AdminGuard } from '../common/guards/admin.guard';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+
+const imageUploadOptions = {
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (
+    req: unknown,
+    file: Express.Multer.File,
+    callback: (error: Error | null, acceptFile: boolean) => void,
+  ) => {
+    if (!file.mimetype.match(/^image\/(jpeg|jpg|png|gif|webp)$/)) {
+      callback(new BadRequestException('Only image files are allowed!'), false);
+      return;
+    }
+    callback(null, true);
+  },
+};
 
 @Controller('upload')
-export class UploadController {  // ✅ Make sure 'export' is here!
+export class UploadController {
   @Post('profile')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   uploadProfilePicture(@UploadedFile() file: Express.Multer.File) {
     return {
       success: true,
       message: 'Profile picture uploaded successfully',
-      imageUrl: `http://192.168.101.15:3000/uploads/${file.filename}`,
+      imageUrl: `/uploads/${file.filename}`,
       filename: file.filename,
     };
   }
 
   @Post('meal')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   uploadMealPicture(@UploadedFile() file: Express.Multer.File) {
     return {
       success: true,
       message: 'Meal picture uploaded successfully',
-      imageUrl: `http://192.168.101.15:3000/uploads/${file.filename}`,
+      imageUrl: `/uploads/${file.filename}`,
       filename: file.filename,
     };
   }

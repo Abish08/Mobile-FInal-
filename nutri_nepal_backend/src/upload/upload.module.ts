@@ -5,7 +5,7 @@ import { extname, join } from 'path';
 import * as fs from 'fs';
 import { UploadController } from './upload.controller';
 
-console.log('🔥🔥🔥 UPLOAD MODULE FILE IS BEING LOADED! 🔥🔥🔥');  // ← ADD THIS LINE
+console.log('🔥🔥🔥 UPLOAD MODULE FILE IS BEING LOADED! 🔥🔥🔥'); // ← ADD THIS LINE
 
 const uploadDir = join(__dirname, '../../uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -18,7 +18,8 @@ if (!fs.existsSync(uploadDir)) {
       storage: diskStorage({
         destination: './uploads',
         filename: (req, file, callback) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           const ext = extname(file.originalname);
           callback(null, `${uniqueSuffix}${ext}`);
         },
