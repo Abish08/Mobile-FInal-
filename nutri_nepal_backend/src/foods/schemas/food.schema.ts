@@ -1,11 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document, SchemaTypes, Types } from 'mongoose';
 
 export type FoodDocument = Food & Document;
 
-@Schema({ 
+@Schema({
   collection: 'foods',
-  timestamps: true 
+  timestamps: true,
 })
 export class Food {
   @Prop({ required: true })
@@ -47,11 +47,11 @@ export class Food {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   createdBy?: Types.ObjectId;
 
-  @Prop([String])
-  images?: string[];
+  @Prop({ type: [SchemaTypes.Mixed], default: [] })
+  images?: unknown[];
 
-  @Prop()
-  thumbnail?: string;
+  @Prop({ type: SchemaTypes.Mixed })
+  thumbnail?: unknown;
 }
 
 export const FoodSchema = SchemaFactory.createForClass(Food);
