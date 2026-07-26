@@ -1,57 +1,71 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nutri_nepal/core/api/api_client.dart';
-import 'package:nutri_nepal/core/api/api_endpoints.dart';
+import 'package:nutri_nepal/core/providers/refresh_provider.dart';
 import 'package:nutri_nepal/features/auth/presentation/view_model/auth_viewmodel.dart';
+import 'package:nutri_nepal/features/daily_log/domain/entities/daily_log_entity.dart';
+import 'package:nutri_nepal/features/daily_log/presentation/providers/daily_log_provider.dart';
+import 'package:nutri_nepal/features/health_profile/domain/entities/health_profile_entity.dart';
+import 'package:nutri_nepal/features/health_profile/presentation/providers/health_profile_provider.dart';
 
 class UserDashboardScreen extends ConsumerStatefulWidget {
-  const UserDashboardScreen({super.key});
+  final ValueChanged<int>? onSelectTab;
+
+  const UserDashboardScreen({super.key, this.onSelectTab});
 
   @override
-  ConsumerState<UserDashboardScreen> createState() => _UserDashboardScreenState();
+  ConsumerState<UserDashboardScreen> createState() =>
+      _UserDashboardScreenState();
 }
 
 class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
-  Map<String, dynamic> _dashboardData = {};
+  HealthProfileEntity? _profile;
+  DailyLogEntity? _dailyLog;
+  String _firstName = 'User';
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchDashboardData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _fetchDashboardData();
+      }
+    });
   }
 
-  // ✅ Safe type conversion helpers
-  int _toInt(dynamic val) => val == null ? 0 : (val is int ? val : val.toDouble().toInt());
-  double _toDouble(dynamic val) => val == null ? 0.0 : (val is double ? val : val.toDouble());
+  int _toInt(dynamic val) =>
+      val == null ? 0 : (val is int ? val : val.toDouble().toInt());
+  double _toDouble(dynamic val) =>
+      val == null ? 0.0 : (val is double ? val : val.toDouble());
 
   Future<void> _fetchDashboardData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final apiClient = ApiClient();
-      
-      final profileRes = await apiClient.dio.get(ApiEndpoints.getProfile);
-      final mealsRes = await apiClient.dio.get(ApiEndpoints.meals);
-      final workoutsRes = await apiClient.dio.get('/workouts');
+      final profile = await ref
+          .read(healthProfileProvider.notifier)
+          .loadProfile();
+      final dailyLog = await ref.read(dailyLogProvider.notifier).loadDailyLog();
+      final authUser = ref.read(authViewModelProvider).user;
 
-      if (profileRes.statusCode == 200) {
+      if (profile != null && mounted) {
         setState(() {
-          _dashboardData = {
-            'user': profileRes.data['data'] ?? profileRes.data,
-            'meals': mealsRes.statusCode == 200 ? (mealsRes.data['data'] ?? []) : [],
-            'workouts': workoutsRes.statusCode == 200 ? (workoutsRes.data['data'] ?? []) : [],
-          };
+          _profile = profile;
+          _dailyLog = dailyLog;
+          _firstName = authUser?.firstName ?? 'User';
           _isLoading = false;
         });
       }
     } catch (e) {
-      debugPrint('Error fetching dashboard data: $e');
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   double _calculateBMI(double weight, double heightCm) {
     final heightM = heightCm / 100;
+    if (weight <= 0 || heightM <= 0) return double.nan;
     return weight / (heightM * heightM);
   }
 
@@ -71,103 +85,206 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authViewModelProvider);
-    final user = authState.user;
+    ref.listen(refreshProvider, (previous, next) {
+      _fetchDashboardData();
+    });
+
+    ref.watch(authViewModelProvider);
 
     if (_isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF1B4332))),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF1B4332)),
+        ),
       );
     }
 
-    final userData = _dashboardData['user'] as Map<String, dynamic>?;
-    final meals = _dashboardData['meals'] as List? ?? [];
-    final workouts = _dashboardData['workouts'] as List? ?? [];
+    final profile = _profile;
+    final dailyLog = _dailyLog;
 
-    // ✅ Safe math calculations
-    final totalCalories = meals.fold<int>(0, (sum, meal) => sum + _toInt(meal['calories']));
-    final totalProtein = meals.fold<double>(0.0, (sum, meal) => sum + _toDouble(meal['protein']));
-    final totalCarbs = meals.fold<double>(0.0, (sum, meal) => sum + _toDouble(meal['carbs']));
-    final totalFats = meals.fold<double>(0.0, (sum, meal) => sum + _toDouble(meal['fats']));
+    final totalCalories = _toInt(dailyLog?.consumedCalories);
+    final burnedCalories = _toInt(dailyLog?.burnedCalories);
+    final totalProtein = _toDouble(dailyLog?.protein);
+    final totalCarbs = _toDouble(dailyLog?.carbs);
+    final totalFats = _toDouble(dailyLog?.fats);
 
-    final weight = _toDouble(userData?['weight'] ?? 70.0);
-    final height = _toDouble(userData?['height'] ?? 170.0);
+    final macros = profile?.macros;
+    final proteinGoal = _toDouble(macros?['protein']);
+    final carbsGoal = _toDouble(macros?['carbs']);
+    final fatsGoal = _toDouble(macros?['fats']);
+    final weight = _toDouble(profile?.weight);
+    final height = _toDouble(profile?.height);
     final bmi = _calculateBMI(weight, height);
-    final bmiCategory = _getBMICategory(bmi);
-    final bmiColor = _getBMIColor(bmi);
-    final calorieGoal = 2500; // You can make this dynamic based on user goals later
+    final calorieGoal = _toInt(profile?.targetCalories ?? 2500);
+    final adjustedGoal = calorieGoal + burnedCalories;
+    final remainingCalories = adjustedGoal - totalCalories;
+    final goalProgress = calorieGoal > 0
+        ? (totalCalories / calorieGoal).clamp(0.0, 1.0)
+        : 0.0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Text(
-          'Namaste, ${userData?['firstName'] ?? 'User'}',
-          style: const TextStyle(
-            color: Color(0xFF1F2937),
-            fontSize: 20,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'NutriNepal',
+          style: TextStyle(
+            color: Color(0xFF1B4332),
+            fontSize: 16,
             fontWeight: FontWeight.bold,
             fontFamily: 'Montserrat',
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Color(0xFF1B4332)),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: _fetchDashboardData,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'You\'re ${((totalCalories / calorieGoal) * 100).toStringAsFixed(0)}% towards your goal today',
-                style: const TextStyle(color: Color(0xFF6B7280), fontSize: 14, fontFamily: 'OpenSans'),
+                'Namaste, $_firstName',
+                style: const TextStyle(
+                  color: Color(0xFF1B4332),
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Montserrat',
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                calorieGoal > 0
+                    ? 'You\'re ${(goalProgress * 100).toStringAsFixed(0)}% towards your food goal today'
+                    : 'Complete your health profile to personalize your goals',
+                style: const TextStyle(
+                  color: Color(0xFF6B7280),
+                  fontSize: 14,
+                  fontFamily: 'OpenSans',
+                ),
               ),
               const SizedBox(height: 24),
 
-              _buildBMICard(bmi, bmiCategory, bmiColor),
-              const SizedBox(height: 16),
-
-              _buildCaloriesCard(totalCalories, calorieGoal),
-              const SizedBox(height: 16),
+              _buildCaloriesCard(
+                consumed: totalCalories,
+                burned: burnedCalories,
+                goal: calorieGoal,
+                adjustedGoal: adjustedGoal,
+                remaining: remainingCalories,
+              ),
+              const SizedBox(height: 14),
 
               Row(
                 children: [
-                  Expanded(child: _buildMacroCard('Protein', '${totalProtein.toStringAsFixed(1)}g', Colors.blue)),
+                  Expanded(
+                    child: _buildMacroCard(
+                      'Protein',
+                      totalProtein,
+                      proteinGoal,
+                      const Color(0xFF2563EB),
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildMacroCard('Carbs', '${totalCarbs.toStringAsFixed(1)}g', Colors.green)),
+                  Expanded(
+                    child: _buildMacroCard(
+                      'Carbs',
+                      totalCarbs,
+                      carbsGoal,
+                      const Color(0xFF16A34A),
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildMacroCard('Fats', '${totalFats.toStringAsFixed(1)}g', Colors.orange)),
+                  Expanded(
+                    child: _buildMacroCard(
+                      'Fats',
+                      totalFats,
+                      fatsGoal,
+                      const Color(0xFFD97706),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildQuickAction(
+                      Icons.restaurant_outlined,
+                      'Meal',
+                      const Color(0xFFB85C00),
+                      () => widget.onSelectTab?.call(1),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildQuickAction(
+                      Icons.fitness_center_outlined,
+                      'Workout',
+                      const Color(0xFF1B4332),
+                      () => widget.onSelectTab?.call(2),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildQuickAction(
+                      Icons.scale_outlined,
+                      'Weight',
+                      const Color(0xFF2563EB),
+                      () => widget.onSelectTab?.call(4),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
 
               const Text(
-                'Daily Agenda',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937), fontFamily: 'Montserrat'),
+                'Today\'s Updates',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1F2937),
+                  fontFamily: 'Montserrat',
+                ),
               ),
               const SizedBox(height: 16),
 
-              if (meals.isNotEmpty) ...[
-                _buildAgendaItem(Icons.restaurant, meals.first['name'] ?? 'Meal', '${_toInt(meals.first['calories'])} kcal', Colors.orange),
-                const SizedBox(height: 12),
-              ],
-              if (workouts.isNotEmpty) ...[
-                _buildAgendaItem(Icons.fitness_center, workouts.first['name'] ?? 'Workout', '45 Mins', const Color(0xFF1B4332)),
-              ],
-              if (meals.isEmpty && workouts.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                  child: const Center(child: Text('No activities logged today', style: TextStyle(color: Color(0xFF6B7280)))),
+              _buildUpdateItem(
+                Icons.edit_note_outlined,
+                'Daily log',
+                totalCalories > 0 || burnedCalories > 0
+                    ? '$totalCalories kcal eaten, $burnedCalories kcal burned'
+                    : 'No meals or workouts logged yet today',
+                const Color(0xFFB85C00),
+                () => widget.onSelectTab?.call(3),
+              ),
+              const SizedBox(height: 12),
+              _buildUpdateItem(
+                Icons.show_chart_outlined,
+                'Progress tracker',
+                bmi.isFinite && bmi > 0
+                    ? 'BMI ${bmi.toStringAsFixed(1)} from your saved profile'
+                    : 'Add height and weight to unlock body metrics',
+                const Color(0xFF1B4332),
+                () => widget.onSelectTab?.call(4),
+              ),
+              const SizedBox(height: 28),
+
+              const Text(
+                'Body Metrics',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1F2937),
+                  fontFamily: 'Montserrat',
                 ),
+              ),
+              const SizedBox(height: 16),
+              _buildBMICard(bmi),
             ],
           ),
         ),
@@ -175,98 +292,382 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
     );
   }
 
-  Widget _buildBMICard(double bmi, String category, Color color) {
+  Widget _buildBMICard(double bmi) {
+    final hasValidBmi = bmi.isFinite && bmi > 0;
+    final category = hasValidBmi ? _getBMICategory(bmi) : 'Complete profile';
+    final color = hasValidBmi ? _getBMIColor(bmi) : const Color(0xFF6B7280);
+
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('YOUR BODY MASS INDEX', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontFamily: 'Montserrat')),
+          const Text(
+            'Body mass index',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1F2937),
+              fontFamily: 'Montserrat',
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Based on your saved profile details',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6B7280),
+                    fontFamily: 'OpenSans',
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => widget.onSelectTab?.call(5),
+                child: const Text('Edit'),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(bmi.toStringAsFixed(1), style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: color, fontFamily: 'Montserrat')),
+              Text(
+                hasValidBmi ? bmi.toStringAsFixed(1) : '--',
+                style: TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                  fontFamily: 'Montserrat',
+                ),
+              ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                child: Text(category, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color, fontFamily: 'Montserrat')),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  category,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                    fontFamily: 'Montserrat',
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(value: (bmi / 40).clamp(0.0, 1.0), backgroundColor: Colors.grey.shade200, valueColor: AlwaysStoppedAnimation<Color>(color), minHeight: 8),
-          ),
+          if (hasValidBmi) ...[
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: (bmi / 40).clamp(0.0, 1.0),
+                backgroundColor: Colors.grey.shade200,
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+                minHeight: 8,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildCaloriesCard(int consumed, int goal) {
+  Widget _buildCaloriesCard({
+    required int consumed,
+    required int burned,
+    required int goal,
+    required int adjustedGoal,
+    required int remaining,
+  }) {
+    final progress = goal > 0 ? (consumed / goal).clamp(0.0, 1.0) : 0.0;
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF1B4332), Color(0xFF2D6A4F)]), borderRadius: BorderRadius.circular(16)),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1B4332), Color(0xFF2D6A4F)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1B4332).withValues(alpha: 0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('DAILY CALORIES', style: TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'Montserrat')),
+          const Text(
+            'Today\'s Goal',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+              letterSpacing: 1.2,
+              fontFamily: 'Montserrat',
+            ),
+          ),
           const SizedBox(height: 8),
-          Text('$consumed', style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold, fontFamily: 'Montserrat')),
-          Text('/ $goal kcal', style: const TextStyle(color: Colors.white70, fontSize: 14, fontFamily: 'OpenSans')),
-          const SizedBox(height: 16),
+          Text(
+            '$consumed / $goal kcal',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 34,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Montserrat',
+            ),
+          ),
+          Text(
+            remaining >= 0
+                ? '$remaining kcal remaining'
+                : '${remaining.abs()} kcal over target',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              fontFamily: 'OpenSans',
+            ),
+          ),
+          const SizedBox(height: 20),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(value: (consumed / goal).clamp(0.0, 1.0), backgroundColor: Colors.white24, valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFB85C00)), minHeight: 8),
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.white24,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFFB85C00),
+              ),
+              minHeight: 10,
+            ),
+          ),
+          const SizedBox(height: 14),
+          _buildCaloriesBreakdown('Consumed', '$consumed kcal'),
+          _buildCaloriesBreakdown('Daily target', '$goal kcal'),
+          _buildCaloriesBreakdown('Activity', '+$burned kcal'),
+          _buildCaloriesBreakdown('Adjusted goal', '$adjustedGoal kcal'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCaloriesBreakdown(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+              fontFamily: 'OpenSans',
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Montserrat',
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMacroCard(String label, String value, Color color) {
+  Widget _buildQuickAction(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          height: 74,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.12)),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFF1F2937),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Montserrat',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMacroCard(String label, double value, double goal, Color color) {
+    final hasGoal = goal > 0;
+    final progress = hasGoal ? (value / goal).clamp(0.0, 1.0) : 0.0;
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+      ),
       child: Column(
         children: [
           SizedBox(
-            width: 50, height: 50,
-            child: Stack(fit: StackFit.expand, children: [
-              CircularProgressIndicator(value: 0.7, strokeWidth: 4, backgroundColor: Colors.grey.shade200, valueColor: AlwaysStoppedAnimation<Color>(color)),
-              Center(child: Icon(label == 'Protein' ? Icons.fitness_center : label == 'Carbs' ? Icons.bakery_dining : Icons.water_drop, color: color, size: 24)),
-            ]),
+            width: 42,
+            height: 42,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 4,
+                  backgroundColor: Colors.grey.shade200,
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+                Center(
+                  child: Icon(
+                    label == 'Protein'
+                        ? Icons.fitness_center_outlined
+                        : label == 'Carbs'
+                        ? Icons.bakery_dining_outlined
+                        : Icons.water_drop_outlined,
+                    color: color,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color, fontFamily: 'Montserrat')),
-          Text(label.toUpperCase(), style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontFamily: 'OpenSans')),
+          const SizedBox(height: 10),
+          Text(
+            '${value.toStringAsFixed(0)}g',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontFamily: 'Montserrat',
+            ),
+          ),
+          if (hasGoal)
+            Text(
+              '/ ${goal.toStringAsFixed(0)}g',
+              style: const TextStyle(
+                fontSize: 11,
+                color: Color(0xFF6B7280),
+                fontFamily: 'OpenSans',
+              ),
+            )
+          else
+            const SizedBox(height: 14),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey.shade600,
+              letterSpacing: 0.5,
+              fontFamily: 'OpenSans',
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAgendaItem(IconData icon, String title, String subtitle, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]),
-      child: Row(
-        children: [
-          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: color, size: 28)),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1F2937), fontFamily: 'Montserrat')),
-                const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280), fontFamily: 'OpenSans')),
-              ],
-            ),
+  Widget _buildUpdateItem(
+    IconData icon,
+    String title,
+    String subtitle,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
           ),
-          const Icon(Icons.chevron_right, color: Color(0xFF6B7280)),
-        ],
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 26),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1F2937),
+                        fontFamily: 'Montserrat',
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF6B7280),
+                        fontFamily: 'OpenSans',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Color(0xFF6B7280)),
+            ],
+          ),
+        ),
       ),
     );
   }
