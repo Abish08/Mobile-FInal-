@@ -1,149 +1,60 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:nutri_nepal/core/api/api_client.dart';
-import 'package:nutri_nepal/core/api/api_endpoints.dart';
-import 'package:nutri_nepal/features/admin/presentation/pages/user_management_screen.dart';
+import 'package:nutri_nepal/core/services/hive/hive_service.dart';
+import 'package:nutri_nepal/features/admin/domain/entities/admin_entity.dart';
 import 'package:nutri_nepal/features/admin/presentation/pages/meal_management_screen.dart';
+import 'package:nutri_nepal/features/admin/presentation/pages/user_management_screen.dart';
 import 'package:nutri_nepal/features/admin/presentation/pages/workout_management_screen.dart';
-// ️ IMPORTANT: Make sure this import matches your actual Login screen path!
-import 'package:nutri_nepal/features/auth/presentation/pages/login_screen.dart'; 
+import 'package:nutri_nepal/features/admin/presentation/providers/admin_provider.dart';
+import 'package:nutri_nepal/features/auth/presentation/pages/login_screen.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
 
   @override
-  ConsumerState<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+  ConsumerState<AdminDashboardScreen> createState() =>
+      _AdminDashboardScreenState();
 }
 
 class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
-  int _totalUsers = 0;
-  int _totalFoodItems = 0;
-  int _totalWorkouts = 0;
-  int _activeToday = 0;
-  
-  Map<String, int> _fitnessGoals = {
-    'Weight Loss': 0,
-    'Muscle Gain': 0,
-    'Endurance': 0,
-    'Maintenance': 0,
-  };
-  
-  List<PieChartSectionData> _bmiDistribution = [];
+  AdminDashboardStats? _stats;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadData();
+      }
+    });
   }
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final apiClient = ApiClient();
-    
-    try {
-      // 1. User Stats
-      final userStatsRes = await apiClient.dio.get(ApiEndpoints.adminUserStats);
-      if (userStatsRes.statusCode == 200) {
-        final stats = userStatsRes.data['stats'] ?? {};
-        
-        final goals = stats['usersByGoal'] as List? ?? [];
-        Map<String, int> tempGoals = {
-          'Weight Loss': 0, 'Muscle Gain': 0, 'Endurance': 0, 'Maintenance': 0
-        };
-        
-        for (var goal in goals) {
-          String goalName = (goal['_id'] ?? 'Unknown').toString();
-          if (goalName.toLowerCase().contains('weight') || goalName.toLowerCase().contains('loss')) {
-            goalName = 'Weight Loss';
-          } else if (goalName.toLowerCase().contains('muscle') || goalName.toLowerCase().contains('gain')) {
-            goalName = 'Muscle Gain';
-          } else if (goalName.toLowerCase().contains('endurance')) {
-            goalName = 'Endurance';
-          } else if (goalName.toLowerCase().contains('maintain') || goalName.toLowerCase().contains('maintenance')) {
-            goalName = 'Maintenance';
-          }
-          
-          int count = (goal['count'] ?? 0).toInt();
-          tempGoals[goalName] = (tempGoals[goalName] ?? 0) + count;
-        }
-        
-        final bmiData = stats['bmiDistribution'] as List? ?? [];
-        int underweight = 0, normal = 0, overweight = 0, obese = 0;
-        
-        for (var bmi in bmiData) {
-          String category = (bmi['_id'] ?? '').toString().toLowerCase();
-          int count = (bmi['count'] ?? 0).toInt();
-          
-          if (category.contains('under')) underweight += count;
-          else if (category.contains('normal')) normal += count;
-          else if (category.contains('over')) overweight += count;
-          else if (category.contains('obese')) obese += count;
-        }
-        
-        int totalBmi = underweight + normal + overweight + obese;
-        if (totalBmi == 0) totalBmi = 1;
-
-        setState(() {
-          _totalUsers = (stats['totalUsers'] ?? 0).toInt();
-          _activeToday = (stats['newToday'] ?? 0).toInt();
-          _fitnessGoals = tempGoals;
-          
-          _bmiDistribution = [
-            PieChartSectionData(value: underweight.toDouble(), color: Colors.blue, title: '${(underweight / totalBmi * 100).toStringAsFixed(0)}%', radius: 50, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-            PieChartSectionData(value: normal.toDouble(), color: Colors.green, title: '${(normal / totalBmi * 100).toStringAsFixed(0)}%', radius: 50, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-            PieChartSectionData(value: overweight.toDouble(), color: Colors.orange, title: '${(overweight / totalBmi * 100).toStringAsFixed(0)}%', radius: 50, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-            PieChartSectionData(value: obese.toDouble(), color: Colors.red, title: '${(obese / totalBmi * 100).toStringAsFixed(0)}%', radius: 50, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-          ];
-        });
-      }
-      
-      // 2. Food Stats
-      final foodStatsRes = await apiClient.dio.get(ApiEndpoints.adminMealStats);
-      if (foodStatsRes.statusCode == 200) {
-        setState(() {
-          _totalFoodItems = (foodStatsRes.data['stats']['totalItems'] ?? 0).toInt();
-        });
-      }
-      
-      // 3. Workout Stats
-      try {
-        final workoutRes = await apiClient.dio.get(ApiEndpoints.adminWorkouts);
-        if (workoutRes.statusCode == 200) {
-          final workouts = workoutRes.data['workouts'] as List? ?? [];
-          setState(() {
-            _totalWorkouts = workouts.length;
-          });
-        }
-      } catch (e) {
-        debugPrint('Error loading workouts: $e');
-      }
-      
-    } catch (e) {
-      debugPrint('Error loading dashboard: $e');
-    } finally {
-      setState(() => _isLoading = false);
-    }
+    final stats = await ref.read(adminProvider.notifier).loadDashboardStats();
+    if (!mounted) return;
+    setState(() {
+      _stats = stats;
+      _isLoading = false;
+    });
   }
 
-  // ✅ LOGOUT LOGIC
   void _showLogoutDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Logout Admin'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               _performLogout();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -155,18 +66,13 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   }
 
   Future<void> _performLogout() async {
-    const storage = FlutterSecureStorage();
-    await storage.delete(key: 'auth_token'); 
-    await storage.delete(key: 'user_data');
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-
-    // ⚠️ Make sure LoginScreen() matches your actual login widget name!
+    await ref.read(adminProvider.notifier).logout();
+    await ref.read(hiveServiceProvider).logoutUser();
+    if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()), 
-      (route) => false, 
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
     );
   }
 
@@ -175,15 +81,18 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1B4332), 
+        backgroundColor: const Color(0xFF1B4332),
         foregroundColor: Colors.white,
         elevation: 2,
         title: const Text(
           'Admin Dashboard',
-          style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold, fontSize: 20),
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
         actions: [
-          // ✅ LOGOUT BUTTON
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: _showLogoutDialog,
@@ -192,7 +101,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: _isLoading 
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _loadData,
@@ -226,10 +135,19 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   }
 
   Widget _buildSectionTitle(String title) {
-    return Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Montserrat', color: Color(0xFF1F2937)));
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        fontFamily: 'Montserrat',
+        color: Color(0xFF1F2937),
+      ),
+    );
   }
 
   Widget _buildStatsGrid() {
+    final stats = _stats;
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -238,21 +156,51 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
       children: [
-        _buildStatCard('$_totalUsers', 'Total Users', Colors.green, Icons.people),
-        _buildStatCard('$_totalFoodItems', 'Total Foods', Colors.blue, Icons.restaurant),
-        _buildStatCard('$_totalWorkouts', 'Total Workouts', Colors.orange, Icons.fitness_center),
-        _buildStatCard('$_activeToday', 'Active Today', Colors.purple, Icons.visibility),
+        _buildStatCard(
+          '${stats?.totalUsers ?? 0}',
+          'Total Users',
+          Colors.green,
+          Icons.people,
+        ),
+        _buildStatCard(
+          '${stats?.totalFoodItems ?? 0}',
+          'Total Foods',
+          Colors.blue,
+          Icons.restaurant,
+        ),
+        _buildStatCard(
+          '${stats?.totalWorkouts ?? 0}',
+          'Total Workouts',
+          Colors.orange,
+          Icons.fitness_center,
+        ),
+        _buildStatCard(
+          '${stats?.activeToday ?? 0}',
+          'Active Today',
+          Colors.purple,
+          Icons.visibility,
+        ),
       ],
     );
   }
 
-  Widget _buildStatCard(String value, String label, Color color, IconData icon) {
+  Widget _buildStatCard(
+    String value,
+    String label,
+    Color color,
+    IconData icon,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,42 +210,97 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Icon(icon, color: color, size: 28),
-              Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color, fontFamily: 'Montserrat')),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                  fontFamily: 'Montserrat',
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontFamily: 'OpenSans'), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF6B7280),
+              fontFamily: 'OpenSans',
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
   }
 
   Widget _buildFitnessGoals() {
-    int total = _fitnessGoals.values.reduce((a, b) => a + b);
+    final goals =
+        _stats?.fitnessGoals ??
+        const {
+          'Weight Loss': 0,
+          'Muscle Gain': 0,
+          'Endurance': 0,
+          'Maintenance': 0,
+        };
+    var total = goals.values.fold<int>(0, (sum, value) => sum + value);
     if (total == 0) total = 1;
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+      decoration: _panelDecoration(),
       child: Column(
         children: [
-          _buildGoalRow('Weight Loss', Colors.red, _fitnessGoals['Weight Loss']!, total),
+          _buildGoalRow(
+            'Weight Loss',
+            Colors.red,
+            goals['Weight Loss'] ?? 0,
+            total,
+          ),
           const SizedBox(height: 12),
-          _buildGoalRow('Muscle Gain', Colors.green, _fitnessGoals['Muscle Gain']!, total),
+          _buildGoalRow(
+            'Muscle Gain',
+            Colors.green,
+            goals['Muscle Gain'] ?? 0,
+            total,
+          ),
           const SizedBox(height: 12),
-          _buildGoalRow('Endurance', Colors.blue, _fitnessGoals['Endurance']!, total),
+          _buildGoalRow(
+            'Endurance',
+            Colors.blue,
+            goals['Endurance'] ?? 0,
+            total,
+          ),
           const SizedBox(height: 12),
-          _buildGoalRow('Maintenance', Colors.orange, _fitnessGoals['Maintenance']!, total),
+          _buildGoalRow(
+            'Maintenance',
+            Colors.orange,
+            goals['Maintenance'] ?? 0,
+            total,
+          ),
         ],
       ),
     );
   }
 
   Widget _buildGoalRow(String label, Color color, int count, int total) {
-    double percentage = (count / total) * 100;
+    final percentage = (count / total) * 100;
     return Row(
       children: [
-        SizedBox(width: 100, child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12))),
+        SizedBox(
+          width: 100,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ),
         Expanded(
           child: LinearProgressIndicator(
             value: count / total,
@@ -308,21 +311,47 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        SizedBox(width: 40, child: Text('${percentage.toStringAsFixed(0)}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
+        SizedBox(
+          width: 40,
+          child: Text(
+            '${percentage.toStringAsFixed(0)}%',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildBmiDistribution() {
+    final distribution = _stats?.bmiDistribution ?? const {};
+    final underweight = distribution['underweight'] ?? 0;
+    final normal = distribution['normal'] ?? 0;
+    final overweight = distribution['overweight'] ?? 0;
+    final obese = distribution['obese'] ?? 0;
+    var total = underweight + normal + overweight + obese;
+    if (total == 0) total = 1;
+
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+      decoration: _panelDecoration(),
       child: Row(
         children: [
           Expanded(
             child: AspectRatio(
               aspectRatio: 1,
-              child: PieChart(PieChartData(sections: _bmiDistribution, borderData: FlBorderData(show: false), centerSpaceRadius: 40, sectionsSpace: 2)),
+              child: PieChart(
+                PieChartData(
+                  sections: [
+                    _bmiSection(underweight, total, Colors.blue),
+                    _bmiSection(normal, total, Colors.green),
+                    _bmiSection(overweight, total, Colors.orange),
+                    _bmiSection(obese, total, Colors.red),
+                  ],
+                  borderData: FlBorderData(show: false),
+                  centerSpaceRadius: 40,
+                  sectionsSpace: 2,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -344,12 +373,36 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     );
   }
 
+  PieChartSectionData _bmiSection(int count, int total, Color color) {
+    return PieChartSectionData(
+      value: count.toDouble(),
+      color: color,
+      title: '${(count / total * 100).toStringAsFixed(0)}%',
+      radius: 50,
+      titleStyle: const TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+    );
+  }
+
   Widget _buildBmiLegend(String label, Color color) {
     return Row(
       children: [
-        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
         const SizedBox(width: 8),
-        Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF4B5563))),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF4B5563)),
+        ),
       ],
     );
   }
@@ -360,15 +413,35 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildActionButton('Manage Users', Icons.people, Colors.green, () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const UserManagementScreen()));
-              }),
+              child: _buildActionButton(
+                'Manage Users',
+                Icons.people,
+                Colors.green,
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const UserManagementScreen(),
+                    ),
+                  );
+                },
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildActionButton('Manage Foods', Icons.restaurant, Colors.blue, () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const MealManagementScreen()));
-              }),
+              child: _buildActionButton(
+                'Manage Foods',
+                Icons.restaurant,
+                Colors.blue,
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const MealManagementScreen(),
+                    ),
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -377,17 +450,27 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           children: [
             Expanded(
               child: _buildActionButton(
-                'Manage Workouts', 
-                Icons.fitness_center, 
-                Colors.orange, 
+                'Manage Workouts',
+                Icons.fitness_center,
+                Colors.orange,
                 () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const WorkoutManagementScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const WorkoutManagementScreen(),
+                    ),
+                  );
                 },
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildActionButton('View Reports', Icons.analytics, Colors.purple, () {}),
+              child: _buildActionButton(
+                'Refresh Stats',
+                Icons.analytics,
+                Colors.purple,
+                _loadData,
+              ),
             ),
           ],
         ),
@@ -395,16 +478,21 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildActionButton(String label, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildActionButton(
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -413,8 +501,13 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                label, 
-                style: TextStyle(color: color, fontWeight: FontWeight.bold, fontFamily: 'Montserrat', fontSize: 14),
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Montserrat',
+                  fontSize: 14,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -422,6 +515,16 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  BoxDecoration _panelDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
+      ],
     );
   }
 }

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nutri_nepal/core/api/api_client.dart';
-import 'package:nutri_nepal/core/api/api_endpoints.dart';
 import 'package:nutri_nepal/features/auth/domain/entities/auth_entity.dart';
 import 'package:nutri_nepal/features/admin/presentation/pages/user_detail_screen.dart';
+import 'package:nutri_nepal/features/admin/presentation/providers/admin_provider.dart';
 
 class UserManagementScreen extends ConsumerStatefulWidget {
   const UserManagementScreen({super.key});
 
   @override
-  ConsumerState<UserManagementScreen> createState() => _UserManagementScreenState();
+  ConsumerState<UserManagementScreen> createState() =>
+      _UserManagementScreenState();
 }
 
 class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
@@ -23,41 +23,45 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUsers();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadUsers();
+      }
+    });
   }
 
   Future<void> _loadUsers() async {
     setState(() => _isLoading = true);
-    
-    final apiClient = ApiClient();
-    try {
-      final response = await apiClient.dio.get(
-        ApiEndpoints.adminUsers,
-        queryParameters: {
-          'search': _searchQuery,
-          'goal': _selectedFilter != 'All Users' ? _selectedFilter.toLowerCase().replaceAll(' ', '_') : '',
-          'sortBy': 'newest',
-        },
-      );
-      
-      if (response.statusCode == 200) {
-        final usersData = response.data['users'] as List;
-        final users = usersData.map((user) => AuthEntity.fromJson(user)).toList();
-        
-        setState(() {
-          _users = users;
-          _totalUsers = response.data['totalUsers'] ?? users.length;
-          _newToday = response.data['newToday'] ?? 0;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
+
+    final userList = await ref
+        .read(adminProvider.notifier)
+        .loadUsers(search: _searchQuery, goal: _goalFilter);
+    if (!mounted) return;
+    if (userList == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading users: $e'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Error loading users'),
+          backgroundColor: Colors.red,
+        ),
       );
       setState(() => _isLoading = false);
+      return;
     }
+    setState(() {
+      _users = userList.users;
+      _totalUsers = userList.totalUsers;
+      _newToday = userList.newToday;
+      _isLoading = false;
+    });
   }
+
+  String get _goalFilter => _selectedFilter == 'Weight Loss'
+      ? 'lose_weight'
+      : _selectedFilter == 'Muscle Gain'
+      ? 'gain_muscle'
+      : _selectedFilter == 'Maintain'
+      ? 'maintain'
+      : '';
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +73,10 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
         elevation: 0,
         title: const Text(
           'User Management',
-          style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: Column(
@@ -98,18 +105,20 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
-              children: ['All Users', 'Active', 'Goal: Weight Loss', 'Newest']
-                  .map((filter) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(filter),
-                          selected: _selectedFilter == filter,
-                          onSelected: (selected) {
-                            setState(() => _selectedFilter = filter);
-                            _loadUsers();
-                          },
-                        ),
-                      ))
+              children: ['All Users', 'Weight Loss', 'Muscle Gain', 'Maintain']
+                  .map(
+                    (filter) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        label: Text(filter),
+                        selected: _selectedFilter == filter,
+                        onSelected: (selected) {
+                          setState(() => _selectedFilter = filter);
+                          _loadUsers();
+                        },
+                      ),
+                    ),
+                  )
                   .toList(),
             ),
           ),
@@ -121,11 +130,19 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             child: Row(
               children: [
                 Expanded(
-                  child: _buildStatCard('$_totalUsers', 'Total Users', Colors.green),
+                  child: _buildStatCard(
+                    '$_totalUsers',
+                    'Total Users',
+                    Colors.green,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _buildStatCard('$_newToday', 'New Today', Colors.orange),
+                  child: _buildStatCard(
+                    '$_newToday',
+                    'New Today',
+                    Colors.orange,
+                  ),
                 ),
               ],
             ),
@@ -140,7 +157,8 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                     padding: const EdgeInsets.all(16),
                     itemCount: _users.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) => _buildUserCard(_users[index]),
+                    itemBuilder: (context, index) =>
+                        _buildUserCard(_users[index]),
                   ),
           ),
         ],
@@ -186,14 +204,17 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 
   Widget _buildUserCard(AuthEntity user) {
     double? bmi;
-    if (user.height != null && user.weight != null) {
+    if (user.height != null &&
+        user.weight != null &&
+        user.height! > 0 &&
+        user.weight! > 0) {
       final heightInMeters = user.height! / 100;
       bmi = user.weight! / (heightInMeters * heightInMeters);
     }
 
     String bmiCategory = 'N/A';
     Color bmiColor = Colors.grey;
-    
+
     if (bmi != null) {
       if (bmi < 18.5) {
         bmiCategory = 'Underweight';
@@ -256,7 +277,10 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: bmiColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
@@ -294,9 +318,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   void _viewUser(AuthEntity user) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => UserDetailScreen(user: user),
-      ),
+      MaterialPageRoute(builder: (context) => UserDetailScreen(user: user)),
     );
   }
 
@@ -321,16 +343,22 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     );
 
     if (confirm == true) {
-      final apiClient = ApiClient();
-      try {
-        await apiClient.dio.delete('${ApiEndpoints.adminUsers}/$userId');
+      final deleted = await ref.read(adminProvider.notifier).deleteUser(userId);
+      if (!mounted) return;
+      if (deleted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User deleted'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('User deleted'),
+            backgroundColor: Colors.green,
+          ),
         );
         _loadUsers();
-      } catch (e) {
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text('Error deleting user'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

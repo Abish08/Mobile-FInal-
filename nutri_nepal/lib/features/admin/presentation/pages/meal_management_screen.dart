@@ -1,96 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nutri_nepal/core/api/api_client.dart';
-import 'package:nutri_nepal/core/api/api_endpoints.dart';
+import 'package:nutri_nepal/features/admin/domain/entities/admin_entity.dart';
 import 'package:nutri_nepal/features/admin/presentation/pages/add_food_screen.dart';
-
-class Meal {
-  final String id;
-  final String name;
-  final String category;
-  final int calories;
-  final double protein;
-  final double carbs;
-  final double fats;
-  final String servingSize;
-  final String status;
-  final String? thumbnail;
-  final List<String>? images;
-  final Map<String, dynamic> rawData;
-
-  Meal({
-    required this.id,
-    required this.name,
-    required this.category,
-    required this.calories,
-    required this.protein,
-    required this.carbs,
-    required this.fats,
-    required this.servingSize,
-    required this.status,
-    this.thumbnail,
-    this.images,
-    required this.rawData,
-  });
-
-  factory Meal.fromJson(Map<String, dynamic> json) {
-    int toInt(dynamic value) {
-      if (value is int) return value;
-      if (value is double) return value.toInt();
-      if (value is String) return int.tryParse(value) ?? 0;
-      return 0;
-    }
-
-    double toDouble(dynamic value) {
-      if (value is double) return value;
-      if (value is int) return value.toDouble();
-      if (value is String) return double.tryParse(value) ?? 0.0;
-      return 0.0;
-    }
-
-    String extractId(dynamic idField) {
-      if (idField == null) return '';
-      if (idField is String) return idField;
-      if (idField is Map && idField.containsKey('\$oid')) {
-        return idField['\$oid'] as String;
-      }
-      return idField.toString();
-    }
-
-    // Get thumbnail or first image
-    String? thumbnail;
-    if (json['thumbnail'] != null) {
-      thumbnail = json['thumbnail'];
-    } else if (json['images'] != null && (json['images'] as List).isNotEmpty) {
-      thumbnail = (json['images'] as List)[0];
-    }
-
-    return Meal(
-      id: extractId(json['_id']),
-      name: json['name'] ?? json['mealName'] ?? 'Unknown',
-      category: json['category'] ?? 'General',
-      calories: toInt(json['calories']),
-      protein: toDouble(json['protein']),
-      carbs: toDouble(json['carbs']),
-      fats: toDouble(json['fats']),
-      servingSize: '${json['servingSize'] ?? 100}g',
-      status: json['isApproved'] == false ? 'pending' : 'approved',
-      thumbnail: thumbnail,
-      images: json['images'] != null ? List<String>.from(json['images']) : null,
-      rawData: json,
-    );
-  }
-}
+import 'package:nutri_nepal/features/admin/presentation/providers/admin_provider.dart';
 
 class MealManagementScreen extends ConsumerStatefulWidget {
   const MealManagementScreen({super.key});
 
   @override
-  ConsumerState<MealManagementScreen> createState() => _MealManagementScreenState();
+  ConsumerState<MealManagementScreen> createState() =>
+      _MealManagementScreenState();
 }
 
 class _MealManagementScreenState extends ConsumerState<MealManagementScreen> {
-  List<Meal> _meals = [];
+  List<AdminFood> _meals = [];
   bool _isLoading = true;
   String _searchQuery = '';
   String _selectedFilter = 'All';
@@ -100,43 +23,36 @@ class _MealManagementScreenState extends ConsumerState<MealManagementScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadData();
+      }
+    });
   }
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final apiClient = ApiClient();
-    
-    try {
-      final statsRes = await apiClient.dio.get(ApiEndpoints.adminMealStats);
-      if (statsRes.statusCode == 200) {
-        setState(() {
-          _totalItems = statsRes.data['stats']['totalItems'] ?? 0;
-          _pendingApproval = statsRes.data['stats']['pendingApproval'] ?? 0;
-        });
-      }
 
-      final mealsRes = await apiClient.dio.get(
-        ApiEndpoints.adminMeals,
-        queryParameters: {
-          'search': _searchQuery,
-          'category': _selectedFilter != 'All' ? _selectedFilter.toLowerCase() : '',
-        },
-      );
-
-      if (mealsRes.statusCode == 200) {
-        final mealsData = mealsRes.data['foods'] as List;
-        setState(() {
-          _meals = mealsData.map((e) => Meal.fromJson(e)).toList();
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
+    final foods = await ref
+        .read(adminProvider.notifier)
+        .loadFoods(search: _searchQuery, category: _categoryFilter);
+    if (!mounted) return;
+    if (foods == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading data: $e'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Error loading data'),
+          backgroundColor: Colors.red,
+        ),
       );
       setState(() => _isLoading = false);
+      return;
     }
+    setState(() {
+      _totalItems = foods.totalItems;
+      _pendingApproval = foods.pendingApproval;
+      _meals = foods.foods;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -149,17 +65,24 @@ class _MealManagementScreenState extends ConsumerState<MealManagementScreen> {
         elevation: 0,
         title: const Text(
           'Food Management',
-          style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_circle, color: Color(0xFF1B4332), size: 30),
+            icon: const Icon(
+              Icons.add_circle,
+              color: Color(0xFF1B4332),
+              size: 30,
+            ),
             onPressed: () async {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const AddFoodScreen()),
               );
-              
+
               if (result == true) {
                 _loadData();
               }
@@ -194,17 +117,19 @@ class _MealManagementScreenState extends ConsumerState<MealManagementScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: ['All', 'Traditional', 'High Protein', 'Pending']
-                  .map((filter) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(filter),
-                          selected: _selectedFilter == filter,
-                          onSelected: (selected) {
-                            setState(() => _selectedFilter = filter);
-                            _loadData();
-                          },
-                        ),
-                      ))
+                  .map(
+                    (filter) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        label: Text(filter),
+                        selected: _selectedFilter == filter,
+                        onSelected: (selected) {
+                          setState(() => _selectedFilter = filter);
+                          _loadData();
+                        },
+                      ),
+                    ),
+                  )
                   .toList(),
             ),
           ),
@@ -216,11 +141,19 @@ class _MealManagementScreenState extends ConsumerState<MealManagementScreen> {
             child: Row(
               children: [
                 Expanded(
-                  child: _buildStatCard('$_totalItems', 'Total Items', Colors.green),
+                  child: _buildStatCard(
+                    '$_totalItems',
+                    'Total Items',
+                    Colors.green,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _buildStatCard('$_pendingApproval', 'Pending', Colors.orange),
+                  child: _buildStatCard(
+                    '$_pendingApproval',
+                    'Pending',
+                    Colors.orange,
+                  ),
                 ),
               ],
             ),
@@ -231,14 +164,20 @@ class _MealManagementScreenState extends ConsumerState<MealManagementScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _meals.isEmpty
-                    ? const Center(child: Text('No meals found', style: TextStyle(color: Colors.grey)))
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _meals.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) => _buildMealCard(_meals[index]),
-                      ),
+                : _visibleMeals.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No meals found',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _visibleMeals.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) =>
+                        _buildMealCard(_visibleMeals[index]),
+                  ),
           ),
         ],
       ),
@@ -251,33 +190,49 @@ class _MealManagementScreenState extends ConsumerState<MealManagementScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             value,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color, fontFamily: 'Montserrat'),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontFamily: 'Montserrat',
+            ),
           ),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontFamily: 'OpenSans')),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF6B7280),
+              fontFamily: 'OpenSans',
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMealCard(Meal meal) {
-    final serverUrl = ApiEndpoints.serverUrl;
-    final imageUrl = meal.thumbnail != null ? '$serverUrl${meal.thumbnail}' : null;
-
+  Widget _buildMealCard(AdminFood meal) {
+    final imageUrl = meal.thumbnailUrl;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-        border: meal.status == 'pending' ? Border.all(color: Colors.orange, width: 1.5) : null,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+        ],
+        border: meal.status == 'pending'
+            ? Border.all(color: Colors.orange, width: 1.5)
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -308,7 +263,9 @@ class _MealManagementScreenState extends ConsumerState<MealManagementScreen> {
                         width: 80,
                         height: 80,
                         color: Colors.grey.shade200,
-                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                       );
                     },
                   ),
@@ -330,22 +287,39 @@ class _MealManagementScreenState extends ConsumerState<MealManagementScreen> {
                   children: [
                     Text(
                       meal.name,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Montserrat'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Montserrat',
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${meal.category} • ${meal.servingSize}',
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF6B7280),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     if (meal.status == 'pending')
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.orange.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text('Pending', style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          'Pending',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -374,7 +348,7 @@ class _MealManagementScreenState extends ConsumerState<MealManagementScreen> {
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => AddFoodScreen(foodData: meal.rawData),
+                      builder: (context) => AddFoodScreen(foodData: meal),
                     ),
                   );
                   if (result == true) {
@@ -393,12 +367,36 @@ class _MealManagementScreenState extends ConsumerState<MealManagementScreen> {
     );
   }
 
+  String get _categoryFilter {
+    if (_selectedFilter == 'Traditional') return 'Traditional';
+    if (_selectedFilter == 'High Protein') return 'High Protein';
+    return '';
+  }
+
+  List<AdminFood> get _visibleMeals {
+    if (_selectedFilter == 'Pending') {
+      return _meals.where((meal) => meal.status == 'pending').toList();
+    }
+    return _meals;
+  }
+
   Widget _buildMacro(String label, String value, Color color) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280))),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
+        ),
         const SizedBox(height: 2),
-        Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color, fontFamily: 'Montserrat')),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: color,
+            fontFamily: 'Montserrat',
+          ),
+        ),
       ],
     );
   }
@@ -410,7 +408,10 @@ class _MealManagementScreenState extends ConsumerState<MealManagementScreen> {
         title: const Text('Delete Food'),
         content: const Text('Are you sure you want to delete this food item?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -421,16 +422,22 @@ class _MealManagementScreenState extends ConsumerState<MealManagementScreen> {
     );
 
     if (confirm == true) {
-      final apiClient = ApiClient();
-      try {
-        await apiClient.dio.delete('${ApiEndpoints.adminMeals}/$id');
+      final deleted = await ref.read(adminProvider.notifier).deleteFood(id);
+      if (!mounted) return;
+      if (deleted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Food deleted'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Food deleted'),
+            backgroundColor: Colors.green,
+          ),
         );
         _loadData();
-      } catch (e) {
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text('Error deleting food'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
