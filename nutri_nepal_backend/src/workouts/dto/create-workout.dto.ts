@@ -1,18 +1,26 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsMongoId } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsMongoId,
+} from 'class-validator';
 
 export class CreateWorkoutDto {
   @IsMongoId()
   userId!: string;
-  
-  @IsString() @IsNotEmpty() 
+
+  @IsString()
+  @IsNotEmpty()
   exerciseName!: string;
-  
-  @IsNumber() 
+
+  @IsNumber()
   sets!: number;
-  
-  @IsNumber() 
+
+  @IsNumber()
   reps!: number;
-  
-  @IsNumber() @IsOptional() 
+
+  @IsNumber()
+  @IsOptional()
   weight?: number;
 }

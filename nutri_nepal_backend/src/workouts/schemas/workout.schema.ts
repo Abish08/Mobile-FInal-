@@ -8,7 +8,10 @@ export class Workout {
   @Prop({ required: true })
   name!: string;
 
-  @Prop({ required: true, enum: ['Strength', 'Cardio', 'Flexibility', 'Other'] })
+  @Prop({
+    required: true,
+    enum: ['Strength', 'Cardio', 'Flexibility', 'Other'],
+  })
   category!: string;
 
   @Prop()

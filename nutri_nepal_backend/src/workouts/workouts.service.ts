@@ -1,24 +1,30 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, QueryFilter, Types, UpdateQuery } from 'mongoose';
 import { Workout, WorkoutDocument } from './schemas/workout.schema';
-import { CreateWorkoutDto } from './dto/create-workout.dto';
 import { UpdateWorkoutDto } from './dto/update-workout.dto';
+
+export type WorkoutInput = Partial<Workout> & {
+  exerciseName?: string;
+  userId?: Types.ObjectId;
+};
 
 @Injectable()
 export class WorkoutsService {
-  constructor(@InjectModel(Workout.name) private workoutModel: Model<WorkoutDocument>) {}
+  constructor(
+    @InjectModel(Workout.name) private workoutModel: Model<WorkoutDocument>,
+  ) {}
 
   // --- EXISTING USER METHODS ---
-  async create(dto: any) {
-    // ✅ THE FIX: Reconstruct 'name' and 'category'. 
+  async create(dto: WorkoutInput) {
+    // ✅ THE FIX: Reconstruct 'name' and 'category'.
     // Fallback 'category' is now 'Other' to match your Mongoose enum!
-    const workoutData = {
+    const workoutData: Partial<Workout> = {
       ...dto,
       name: dto.name || dto.exerciseName || 'Unknown Workout',
-      category: dto.category || 'Other', 
+      category: dto.category || 'Other',
     };
-    
+
     return this.workoutModel.create(workoutData);
   }
 
@@ -33,7 +39,9 @@ export class WorkoutsService {
   }
 
   async update(id: string, dto: UpdateWorkoutDto) {
-    const updated = await this.workoutModel.findByIdAndUpdate(id, dto, { new: true });
+    const updated = await this.workoutModel.findByIdAndUpdate(id, dto, {
+      returnDocument: 'after',
+    });
     if (!updated) throw new NotFoundException('Workout not found');
     return updated;
   }
@@ -45,10 +53,10 @@ export class WorkoutsService {
 
   // --- ADMIN & CATALOG METHODS ---
   async findAllAdmin(search?: string, category?: string) {
-    const query: any = { 
-      isApproved: { $ne: false } 
-    }; 
-    
+    const query: QueryFilter<WorkoutDocument> = {
+      isApproved: { $ne: false },
+    };
+
     if (search) {
       query.name = { $regex: search, $options: 'i' };
     }
@@ -56,14 +64,16 @@ export class WorkoutsService {
       query.category = category;
     }
 
-    const workouts = await this.workoutModel.find(query).sort({ createdAt: -1 });
-    const totalItems = await this.workoutModel.countDocuments(query); 
-    
+    const workouts = await this.workoutModel
+      .find(query)
+      .sort({ createdAt: -1 });
+    const totalItems = await this.workoutModel.countDocuments(query);
+
     return { success: true, workouts, totalItems };
   }
 
-  async createAdminWorkout(dto: any) {
-    const workoutData = {
+  async createAdminWorkout(dto: WorkoutInput) {
+    const workoutData: Partial<Workout> = {
       ...dto,
       name: dto.name || dto.exerciseName || 'Unknown Workout',
       category: dto.category || 'Other', // ✅ Changed to 'Other'
@@ -72,8 +82,10 @@ export class WorkoutsService {
     return { success: true, data: created };
   }
 
-  async updateAdminWorkout(id: string, dto: any) {
-    const updated = await this.workoutModel.findByIdAndUpdate(id, dto, { new: true });
+  async updateAdminWorkout(id: string, dto: UpdateQuery<WorkoutDocument>) {
+    const updated = await this.workoutModel.findByIdAndUpdate(id, dto, {
+      returnDocument: 'after',
+    });
     if (!updated) throw new NotFoundException('Workout not found');
     return { success: true, data: updated };
   }

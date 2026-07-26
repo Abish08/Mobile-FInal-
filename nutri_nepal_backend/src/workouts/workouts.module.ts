@@ -5,7 +5,9 @@ import { WorkoutsController } from './workouts.controller';
 import { WorkoutsService } from './workouts.service';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Workout.name, schema: WorkoutSchema }])],
+  imports: [
+    MongooseModule.forFeature([{ name: Workout.name, schema: WorkoutSchema }]),
+  ],
   controllers: [WorkoutsController],
   providers: [WorkoutsService],
   exports: [WorkoutsService],
