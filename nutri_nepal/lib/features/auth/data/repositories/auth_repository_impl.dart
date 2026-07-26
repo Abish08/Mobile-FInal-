@@ -1,12 +1,12 @@
+import 'package:dartz/dartz.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutri_nepal/core/error/failures.dart';
-import 'package:nutri_nepal/features/auth/data/datasources/auth_datasource.dart'; // ← Interface
+import 'package:nutri_nepal/features/auth/data/datasources/auth_local_datasource.dart';
 import 'package:nutri_nepal/features/auth/data/datasources/local/auth_local_datasource.dart';
-import 'package:nutri_nepal/features/auth/data/datasources/remote/auth_datasource.dart'; // ← Remote
+import 'package:nutri_nepal/features/auth/data/datasources/remote/auth_remote_datasource.dart';
 import 'package:nutri_nepal/features/auth/data/models/auth_hive_model.dart';
 import 'package:nutri_nepal/features/auth/domain/entities/auth_entity.dart';
 import 'package:nutri_nepal/features/auth/domain/repositories/auth_repository.dart';
-import 'package:dartz/dartz.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   return AuthRepositoryImpl(
@@ -34,7 +34,10 @@ class AuthRepositoryImpl implements IAuthRepository {
   }
 
   @override
-  Future<Either<Failure, AuthEntity>> login(String email, String password) async {
+  Future<Either<Failure, AuthEntity>> login(
+    String email,
+    String password,
+  ) async {
     try {
       final loggedInUser = await _remoteDataSource.login(email, password);
       await _localDataSource.register(loggedInUser);
@@ -54,7 +57,9 @@ class AuthRepositoryImpl implements IAuthRepository {
       try {
         final localUser = await _localDataSource.getCurrentUser();
         if (localUser == null) {
-          return const Left(LocalDatabaseFailure(message: 'No active session.'));
+          return const Left(
+            LocalDatabaseFailure(message: 'No active session.'),
+          );
         }
         return Right(localUser.toEntity());
       } catch (localError) {

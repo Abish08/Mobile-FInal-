@@ -1,10 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:nutri_nepal/core/api/api_client.dart';
 import 'package:nutri_nepal/core/api/api_endpoints.dart';
 import 'package:nutri_nepal/features/auth/data/models/auth_hive_model.dart';
-
 
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
   return AuthRemoteDataSourceImpl(ApiClient());
@@ -22,16 +20,28 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   AuthRemoteDataSourceImpl(this._apiClient);
 
+  String _dioMessage(DioException error, String fallback) {
+    final responseData = error.response?.data;
+    if (responseData is Map && responseData['message'] != null) {
+      return responseData['message'].toString();
+    }
+    if (responseData is String && responseData.trim().isNotEmpty) {
+      return responseData;
+    }
+    if (error.message != null && error.message!.trim().isNotEmpty) {
+      return error.message!;
+    }
+    return fallback;
+  }
+
   @override
   Future<AuthHiveModel> register(AuthHiveModel user) async {
     try {
       final requestData = user.toJson();
-      print('AuthRemoteDataSource.register: request=$requestData');
       final response = await _apiClient.post(
         ApiEndpoints.register,
         data: requestData,
       );
-      print('AuthRemoteDataSource.register: status=${response.statusCode} data=${response.data}');
 
       if (response.statusCode == 201) {
         return AuthHiveModel.fromJson(response.data['data']);
@@ -39,25 +49,18 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw Exception('Registration failed');
       }
     } on DioException catch (e) {
-      final message = e.response?.data['message'] ?? 'Registration failed';
-      print('AuthRemoteDataSource.register error: $message');
-      throw Exception(message);
+      throw Exception(_dioMessage(e, 'Registration failed'));
     }
   }
 
   @override
   Future<AuthHiveModel> login(String email, String password) async {
     try {
-      final requestData = {
-        'email': email,
-        'password': password,
-      };
-      print('AuthRemoteDataSource.login: request=email=$email passwordLength=${password.length}');
+      final requestData = {'email': email, 'password': password};
       final response = await _apiClient.post(
         ApiEndpoints.login,
         data: requestData,
       );
-      print('AuthRemoteDataSource.login: status=${response.statusCode} data=${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final token = response.data['token'];
@@ -67,33 +70,26 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw Exception('Login failed');
       }
     } on DioException catch (e) {
-      final message = e.response?.data['message'] ?? 'Login failed';
-      print('AuthRemoteDataSource.login error: $message');
-      throw Exception(message);
+      throw Exception(_dioMessage(e, 'Login failed'));
     }
   }
 
   @override
   Future<AuthHiveModel> getCurrentUser() async {
     try {
-      print('AuthRemoteDataSource.getCurrentUser');
       final response = await _apiClient.get(ApiEndpoints.getMe);
-      print('AuthRemoteDataSource.getCurrentUser: status=${response.statusCode} data=${response.data}');
       if (response.statusCode == 200) {
         return AuthHiveModel.fromJson(response.data['data']);
       } else {
         throw Exception('Failed to get user');
       }
     } on DioException catch (e) {
-      final message = e.response?.data['message'] ?? 'Failed to get user';
-      print('AuthRemoteDataSource.getCurrentUser error: $message');
-      throw Exception(message);
+      throw Exception(_dioMessage(e, 'Failed to get user'));
     }
   }
 
   @override
   Future<void> logout() async {
-    print('AuthRemoteDataSource.logout');
     await _apiClient.clearToken();
   }
 }

@@ -1,5 +1,5 @@
 import 'package:nutri_nepal/core/services/hive/hive_service.dart';
-import 'package:nutri_nepal/features/auth/data/datasources/auth_datasource.dart';
+import 'package:nutri_nepal/features/auth/data/datasources/auth_local_datasource.dart';
 import 'package:nutri_nepal/features/auth/data/models/auth_hive_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,7 +30,7 @@ class AuthLocalDatasource implements IAuthDatasource {
   @override
   Future<bool> register(AuthHiveModel model) async {
     final normalizedEmail = model.email.toLowerCase();
-    
+
     if (await _hiveService.isEmailTaken(normalizedEmail)) {
       // User exists, just update them instead of throwing error
       await _hiveService.saveUser(model);
