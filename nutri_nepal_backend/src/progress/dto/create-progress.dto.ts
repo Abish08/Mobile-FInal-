@@ -2,14 +2,17 @@ import { IsNumber, IsOptional, IsMongoId } from 'class-validator';
 
 export class CreateProgressDto {
   @IsMongoId()
-  userId!: string;
-  
-  @IsNumber() 
+  @IsOptional()
+  userId?: string;
+
+  @IsNumber()
   weight!: number;
-  
-  @IsNumber() @IsOptional() 
+
+  @IsNumber()
+  @IsOptional()
   bodyFat?: number;
-  
-  @IsNumber() @IsOptional() 
+
+  @IsNumber()
+  @IsOptional()
   muscleMass?: number;
 }

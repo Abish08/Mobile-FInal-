@@ -5,7 +5,11 @@ import { ProgressController } from './progress.controller';
 import { ProgressService } from './progress.service';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Progress.name, schema: ProgressSchema }])],
+  imports: [
+    MongooseModule.forFeature([
+      { name: Progress.name, schema: ProgressSchema },
+    ]),
+  ],
   controllers: [ProgressController],
   providers: [ProgressService],
   exports: [ProgressService],
