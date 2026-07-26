@@ -38,24 +38,14 @@ class HiveService {
 
   // ✅ FIXED: Removed the email existence check that was causing the error
   Future<AuthHiveModel> saveUser(AuthHiveModel user) async {
-    // Simply save/update the user - no duplicate email check
-    // The backend already prevents duplicate emails during registration
-    // During login, we WANT to update the existing user with fresh data
-    
-    await _users.put(user.userId, user);
-    await _session.put(HiveTableConstant.activeUserKey, user.userId);
-    return user;
+    final sanitizedUser = user.copyWith(password: '');
+
+    await _users.put(sanitizedUser.userId, sanitizedUser);
+    await _session.put(HiveTableConstant.activeUserKey, sanitizedUser.userId);
+    return sanitizedUser;
   }
 
   Future<AuthHiveModel?> loginUser(String email, String password) async {
-    final normalizedEmail = email.toLowerCase();
-    for (final user in _users.values) {
-      if (user.email.toLowerCase() == normalizedEmail &&
-          user.password == password) {
-        await _session.put(HiveTableConstant.activeUserKey, user.userId);
-        return user;
-      }
-    }
     return null;
   }
 

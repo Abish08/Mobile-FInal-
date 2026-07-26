@@ -73,6 +73,40 @@ class AuthHiveModel extends HiveObject {
     };
   }
 
+  AuthHiveModel copyWith({
+    String? userId,
+    String? firstName,
+    String? lastName,
+    String? phone,
+    String? email,
+    String? password,
+    String? profilePicture,
+    int? age,
+    double? weight,
+    double? height,
+    String? gender,
+    String? fitnessGoal,
+    List<String>? healthConditions,
+    String? role,
+  }) {
+    return AuthHiveModel(
+      userId: userId ?? this.userId,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      phone: phone ?? this.phone,
+      email: email ?? this.email,
+      password: password ?? this.password,
+      profilePicture: profilePicture ?? this.profilePicture,
+      age: age ?? this.age,
+      weight: weight ?? this.weight,
+      height: height ?? this.height,
+      gender: gender ?? this.gender,
+      fitnessGoal: fitnessGoal ?? this.fitnessGoal,
+      healthConditions: healthConditions ?? this.healthConditions,
+      role: role ?? this.role,
+    );
+  }
+
   factory AuthHiveModel.fromEntity(AuthEntity entity) {
     return AuthHiveModel(
       userId: entity.userId ?? const Uuid().v4(),

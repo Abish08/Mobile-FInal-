@@ -1,6 +1,6 @@
 import 'package:nutri_nepal/core/error/failures.dart';
 import 'package:nutri_nepal/core/usecases/app_usecase.dart';
-import 'package:nutri_nepal/features/auth/data/repositories/auth_repository.dart';
+import 'package:nutri_nepal/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:nutri_nepal/features/auth/domain/entities/auth_entity.dart';
 import 'package:nutri_nepal/features/auth/domain/repositories/auth_repository.dart';
 import 'package:dartz/dartz.dart';
@@ -27,13 +27,7 @@ class RegisterParams extends Equatable {
   });
 
   @override
-  List<Object?> get props => [
-        firstName,
-        lastName,
-        email,
-        phone,
-        password,
-      ];
+  List<Object?> get props => [firstName, lastName, email, phone, password];
 }
 
 class RegisterUseCase implements UsecaseWithParams<bool, RegisterParams> {

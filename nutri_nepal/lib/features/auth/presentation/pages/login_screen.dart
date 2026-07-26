@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutri_nepal/features/auth/presentation/pages/signup_screen.dart';
-import 'package:nutri_nepal/features/auth/presentation/pages/health_onboarding_screen.dart';
 import 'package:nutri_nepal/features/dashboard/presentation/pages/dashboard_screen.dart';
 import 'package:nutri_nepal/features/admin/presentation/pages/admin_dashboard_screen.dart';
 import 'package:nutri_nepal/features/auth/presentation/state/auth_state.dart';
 import 'package:nutri_nepal/features/auth/presentation/view_model/auth_viewmodel.dart';
+import 'package:nutri_nepal/features/health_profile/presentation/pages/health_onboarding_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -18,13 +18,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _hasNavigated = false; 
+  bool _hasNavigated = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _hasNavigated = false; 
+    _hasNavigated = false;
     super.dispose();
   }
 
@@ -42,10 +42,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    ref.read(authViewModelProvider.notifier).login(
-      email: email,
-      password: password,
-    );
+    ref
+        .read(authViewModelProvider.notifier)
+        .login(email: email, password: password);
   }
 
   @override
@@ -53,51 +52,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authState = ref.watch(authViewModelProvider);
 
     ref.listen<AuthState>(authViewModelProvider, (previous, next) {
-      if (next.status == AuthStatus.authenticated && next.user != null && !_hasNavigated) {
-        _hasNavigated = true; 
-        
+      if (next.status == AuthStatus.authenticated &&
+          next.user != null &&
+          !_hasNavigated) {
+        _hasNavigated = true;
+
         final user = next.user!;
-        
-        // 🔍 DEBUG PRINTS
-        print('');
-        print('🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍');
-        print('🔍 DEBUG: Login successful!');
-        print(' DEBUG: User email: ${user.email}');
-        print('🔍 DEBUG: User role: "${user.role}"');
-        print('🔍 DEBUG: User firstName: ${user.firstName}');
-        print('🔍 DEBUG: User age: ${user.age}');
-        print(' DEBUG: User weight: ${user.weight}');
-        print('🔍 DEBUG: User height: ${user.height}');
-        print('🔍 DEBUG: Role comparison: "${user.role}" == "admin" is ${user.role == 'admin'}');
-        print('🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍🔍');
-        print('');
-        
         if (user.role == 'admin') {
-          print('✅ NAVIGATING TO ADMIN DASHBOARD');
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => AdminDashboardScreen()),
+            MaterialPageRoute(
+              builder: (context) => const AdminDashboardScreen(),
+            ),
           );
-        } else if (user.age == null || user.weight == null || user.height == null) {
-          print('✅ NAVIGATING TO HEALTH ONBOARDING (missing health data)');
+        } else if (user.age == null ||
+            user.weight == null ||
+            user.height == null) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const HealthOnboardingScreen()),
+            MaterialPageRoute(
+              builder: (context) => const HealthOnboardingScreen(),
+            ),
           );
         } else {
-          print('✅ NAVIGATING TO REGULAR DASHBOARD');
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const DashboardScreen()),
           );
         }
       } else if (next.status == AuthStatus.error && next.message != null) {
-        print(' LOGIN ERROR: ${next.message}');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.message!),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(next.message!), backgroundColor: Colors.red),
         );
       }
     });
@@ -117,7 +102,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   color: const Color(0xFF1B4332),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Icon(Icons.local_florist, color: Colors.white, size: 40),
+                child: const Icon(
+                  Icons.local_florist,
+                  color: Colors.white,
+                  size: 40,
+                ),
               ),
               const SizedBox(height: 24),
               const Text(
@@ -246,7 +235,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : const Row(
@@ -284,7 +275,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const SignupScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => const SignupScreen(),
+                        ),
                       );
                     },
                     child: const Text(
