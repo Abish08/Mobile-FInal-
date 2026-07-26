@@ -15,41 +15,52 @@ import { WorkoutsModule } from './workouts/workouts.module';
 import { ProgressModule } from './progress/progress.module';
 import { UploadController } from './upload/upload.controller';
 import { FoodsModule } from './foods/foods.module';
+import { FoodLogsModule } from './foods/foodLogs.module';
+import { WorkoutLogsModule } from './workouts/workoutLogs.module';
+import { HealthProfileModule } from './healthprofile/healthProfile.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ envFilePath: './config.env', isGlobal: true }),
-    
+
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
+      rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
 
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({ uri: config.get('LOCAL_DATABASE_URI') }),
+      useFactory: (config: ConfigService) => ({
+        uri: config.get('LOCAL_DATABASE_URI'),
+      }),
       inject: [ConfigService],
     }),
-    
+
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60000, limit: 100 }]),
-    
+
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads',
         filename: (req, file, callback) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           const ext = extname(file.originalname);
           callback(null, `${uniqueSuffix}${ext}`);
         },
       }),
     }),
-    
+
     UsersModule,
     AuthModule,
     MealsModule,
     WorkoutsModule,
     ProgressModule,
     FoodsModule,
+
+    // ✅ ADD THESE THREE TO THE IMPORTS ARRAY
+    FoodLogsModule,
+    WorkoutLogsModule,
+    HealthProfileModule,
   ],
   controllers: [UploadController],
 })
