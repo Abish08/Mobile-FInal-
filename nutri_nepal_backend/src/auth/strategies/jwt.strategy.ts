@@ -12,7 +12,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     config: ConfigService,
   ) {
-    super({ jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), ignoreExpiration: false, secretOrKey: config.get('JWT_SECRET')! });
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: config.get('JWT_SECRET')!,
+    });
   }
   async validate(payload: { id: string }) {
     const user = await this.userModel.findById(payload.id);

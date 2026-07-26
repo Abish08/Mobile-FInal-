@@ -1,11 +1,15 @@
-import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  constructor(private reflector: Reflector) { 
-    super(); 
+  constructor(private reflector: Reflector) {
+    super();
   }
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -25,7 +29,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return canActivate as boolean;
   }
 
-  handleRequest(err: any, user: any) {
+  handleRequest<TUser = unknown>(err: Error | null, user: TUser): TUser {
     if (err || !user) {
       throw err || new UnauthorizedException('Not authorized');
     }
