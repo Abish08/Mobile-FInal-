@@ -11,18 +11,12 @@ class _DashboardViewState extends State<DashboardView> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
-    const Center(child: Text('Home Screen', style: TextStyle(fontSize: 24))),
+    const Center(child: Text('Home Screen', style: TextStyle(fontSize: 24))), 
     const Center(child: Text('Meals Screen', style: TextStyle(fontSize: 24))),
     const Center(child: Text('Workouts Screen', style: TextStyle(fontSize: 24))),
     const Center(child: Text('Log Screen', style: TextStyle(fontSize: 24))),
     const Center(child: Text('Profile Screen', style: TextStyle(fontSize: 24))),
   ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,33 +24,18 @@ class _DashboardViewState extends State<DashboardView> {
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF1B4332),
-        unselectedItemColor: const Color(0xFF6B7280),
+        onTap: (index) => setState(() => _selectedIndex = index),
+        type: BottomNavigationBarType.fixed, 
+        selectedItemColor: const Color(0xFF1B4332), 
+        unselectedItemColor: const Color(0xFF6B7280), 
         backgroundColor: Colors.white,
         elevation: 8,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant),
-            label: 'Meals',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fitness_center),
-            label: 'Workouts',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.edit_note),
-            label: 'Log',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.restaurant), label: 'Meals'),
+          BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: 'Workouts'),
+          BottomNavigationBarItem(icon: Icon(Icons.edit_note), label: 'Log'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
