@@ -33,63 +33,69 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     super.dispose();
   }
 
-void _handleSignup() {
-  if (!_agreeToTerms) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Please agree to the Terms & Conditions'),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
+  void _handleSignup() {
+    if (!_agreeToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please agree to the Terms & Conditions'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    if (firstName.isEmpty ||
+        lastName.isEmpty ||
+        email.isEmpty ||
+        phone.isEmpty ||
+        password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Passwords do not match'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password must be at least 6 characters'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // ✅ Pass ALL 5 parameters (as defined in the use case)
+    ref
+        .read(authViewModelProvider.notifier)
+        .register(
+          firstName: firstName,
+          lastName: lastName,
+          email: email,
+          phone: phone,
+          password: password,
+        );
   }
-
-  final firstName = _firstNameController.text.trim();
-  final lastName = _lastNameController.text.trim();
-  final email = _emailController.text.trim();
-  final phone = _phoneController.text.trim();
-  final password = _passwordController.text;
-  final confirmPassword = _confirmPasswordController.text;
-
-  if (firstName.isEmpty || lastName.isEmpty || email.isEmpty || phone.isEmpty || password.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Please fill all fields'),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
-
-  if (password != confirmPassword) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Passwords do not match'),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
-
-  if (password.length < 6) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Password must be at least 6 characters'),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
-
-  // ✅ Pass ALL 5 parameters (as defined in the use case)
-  ref.read(authViewModelProvider.notifier).register(
-    firstName: firstName,
-    lastName: lastName,
-    email: email,
-    phone: phone,
-    password: password,
-  );
-}
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +113,7 @@ void _handleSignup() {
           context,
           MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
-      } 
+      }
       // ✅ CHANGE: errorMessage → message
       else if (next.status == AuthStatus.error && next.message != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -363,7 +369,8 @@ void _handleSignup() {
                           ),
                           onPressed: () {
                             setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword;
                             });
                           },
                         ),
@@ -434,7 +441,9 @@ void _handleSignup() {
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : const Row(
@@ -458,8 +467,9 @@ void _handleSignup() {
                 ),
               ),
               const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   const Text(
                     'Already have an account? ',
@@ -472,7 +482,9 @@ void _handleSignup() {
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
                       );
                     },
                     child: const Text(

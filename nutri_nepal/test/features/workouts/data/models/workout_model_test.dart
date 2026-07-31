@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nutri_nepal/core/api/api_endpoints.dart';
 import 'package:nutri_nepal/features/workouts/data/models/workout_model.dart';
 
 void main() {
@@ -15,7 +16,7 @@ void main() {
 
     expect(
       workout.thumbnail,
-      'http://192.168.1.167:3000/uploads/workout-good.jpg',
+      ApiEndpoints.resolveUploadUrl('/uploads/workout-good.jpg'),
     );
   });
 }

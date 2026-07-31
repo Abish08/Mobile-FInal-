@@ -88,6 +88,9 @@ class WorkoutModel extends UserWorkout {
   }
 
   static String? _thumbnailFrom(Map<String, dynamic> json) {
+    final thumbnail = _optionalText(json['thumbnail']);
+    if (thumbnail != null) return thumbnail;
+
     final media = json['media'];
     if (media is List && media.isNotEmpty) {
       final image = media.whereType<Map>().cast<Map>().firstWhere(
@@ -97,8 +100,6 @@ class WorkoutModel extends UserWorkout {
       final url = _optionalText(image['url']);
       if (url != null) return url;
     }
-    final thumbnail = _optionalText(json['thumbnail']);
-    if (thumbnail != null) return thumbnail;
     final images = json['images'];
     if (images is List && images.isNotEmpty) return _optionalText(images.first);
     return null;

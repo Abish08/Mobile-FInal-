@@ -49,6 +49,8 @@ class ApiEndpoints {
   // Auth & User
   static const String login = '/users/login';
   static const String register = '/users/register';
+  static const String forgotPassword = '/users/forgot-password';
+  static const String resetPassword = '/users/reset-password';
   static const String getMe = '/users/me';
   static const String getProfile = '/healthProfile';
   static const String updateProfile = '/healthProfile';

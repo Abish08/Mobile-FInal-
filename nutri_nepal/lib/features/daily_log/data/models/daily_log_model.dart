@@ -15,15 +15,21 @@ class DailyLogModel extends DailyLogEntity {
     required Map<String, dynamic> foodResponse,
     required Map<String, dynamic> workoutResponse,
   }) {
+    final foodSummary = _mapFrom(foodResponse['summary']);
+    final workoutSummary = _mapFrom(workoutResponse['summary']);
     return DailyLogModel(
       foodLogs: _foodLogs(foodResponse['data']),
       workoutLogs: _workoutLogs(workoutResponse['data']),
-      consumedCalories: _toDouble(foodResponse['summary']?['calories']),
-      burnedCalories: _toDouble(workoutResponse['summary']?['calories']),
-      protein: _toDouble(foodResponse['summary']?['protein']),
-      carbs: _toDouble(foodResponse['summary']?['carbs']),
-      fats: _toDouble(foodResponse['summary']?['fats']),
+      consumedCalories: _toDouble(foodSummary['calories']),
+      burnedCalories: _toDouble(workoutSummary['calories']),
+      protein: _toDouble(foodSummary['protein']),
+      carbs: _toDouble(foodSummary['carbs']),
+      fats: _toDouble(foodSummary['fats']),
     );
+  }
+
+  static Map<String, dynamic> _mapFrom(dynamic value) {
+    return value is Map ? Map<String, dynamic>.from(value) : const {};
   }
 
   static List<DailyLogItemEntity> _foodLogs(dynamic value) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nutri_nepal/features/auth/presentation/pages/forgot_password_screen.dart';
 import 'package:nutri_nepal/features/auth/presentation/pages/signup_screen.dart';
 import 'package:nutri_nepal/features/dashboard/presentation/pages/dashboard_screen.dart';
 import 'package:nutri_nepal/features/admin/presentation/pages/admin_dashboard_screen.dart';
@@ -166,6 +167,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
                         hintText: 'abish@gmail.com',
                         filled: true,
@@ -212,6 +214,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             });
                           },
                         ),
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const ForgotPasswordScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text('Forgot password?'),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -261,8 +278,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   const Text(
                     "Don't have an account? ",
