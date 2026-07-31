@@ -18,6 +18,7 @@ import { FoodsModule } from './foods/foods.module';
 import { FoodLogsModule } from './foods/foodLogs.module';
 import { WorkoutLogsModule } from './workouts/workoutLogs.module';
 import { HealthProfileModule } from './healthprofile/healthProfile.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { HealthProfileModule } from './healthprofile/healthProfile.module';
     FoodLogsModule,
     WorkoutLogsModule,
     HealthProfileModule,
+    AiModule,
   ],
   controllers: [UploadController],
 })

@@ -55,6 +55,9 @@ class ApiEndpoints {
   static const String getProfile = '/healthProfile';
   static const String updateProfile = '/healthProfile';
 
+  // AI
+  static const String aiChat = '/ai/chat';
+
   // Food & Food Logs
   static const String publicFoods = '/foods';
   static const String foodLogs = '/foodLogs';
