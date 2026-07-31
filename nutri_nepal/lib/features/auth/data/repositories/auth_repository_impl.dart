@@ -69,6 +69,17 @@ class AuthRepositoryImpl implements IAuthRepository {
   }
 
   @override
+  Future<Either<Failure, AuthEntity>> loginWithGoogle(String idToken) async {
+    try {
+      final user = await _remoteDataSource.getCurrentUser();
+      await _localDataSource.register(user);
+      return Right(user.toEntity());
+    } catch (error) {
+      return Left(LocalDatabaseFailure(message: error.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, bool>> logout() async {
     try {
       await _remoteDataSource.logout();
