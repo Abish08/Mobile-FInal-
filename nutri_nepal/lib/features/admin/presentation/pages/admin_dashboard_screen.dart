@@ -1,7 +1,9 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:nutri_nepal/app/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutri_nepal/core/services/hive/hive_service.dart';
+import 'package:nutri_nepal/core/widgets/app_logo.dart';
 import 'package:nutri_nepal/features/admin/domain/entities/admin_entity.dart';
 import 'package:nutri_nepal/features/admin/presentation/pages/meal_management_screen.dart';
 import 'package:nutri_nepal/features/admin/presentation/pages/user_management_screen.dart';
@@ -79,18 +81,29 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.appBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1B4332),
+        backgroundColor: AppColors.primaryOrange,
         foregroundColor: Colors.white,
         elevation: 2,
-        title: const Text(
-          'Admin Dashboard',
-          style: TextStyle(
-            fontFamily: 'Montserrat',
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+        toolbarHeight: 64,
+        title: Row(
+          children: [
+            const AppLogo(fullLogo: false, size: 42),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'Admin Dashboard',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -141,7 +154,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         fontSize: 18,
         fontWeight: FontWeight.bold,
         fontFamily: 'Montserrat',
-        color: Color(0xFF1F2937),
+        color: AppColors.white,
       ),
     );
   }
@@ -193,7 +206,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -226,7 +239,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             label,
             style: const TextStyle(
               fontSize: 12,
-              color: Color(0xFF6B7280),
+              color: AppColors.grey,
               fontFamily: 'OpenSans',
             ),
             maxLines: 1,
@@ -520,7 +533,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
   BoxDecoration _panelDecoration() {
     return BoxDecoration(
-      color: Colors.white,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(12),
       boxShadow: [
         BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),

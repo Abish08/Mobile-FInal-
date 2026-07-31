@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:nutri_nepal/app/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nutri_nepal/features/auth/presentation/pages/login_screen.dart';
@@ -50,7 +51,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Profile picture updated successfully'),
-              backgroundColor: Color(0xFF1B4332),
+              backgroundColor: AppColors.primaryOrange,
             ),
           );
         } else {
@@ -82,7 +83,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               ListTile(
                 leading: const Icon(
                   Icons.photo_library_outlined,
-                  color: Color(0xFF1B4332),
+                  color: AppColors.primaryOrange,
                 ),
                 title: const Text(
                   'Choose from Gallery',
@@ -96,7 +97,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               ListTile(
                 leading: const Icon(
                   Icons.camera_alt_outlined,
-                  color: Color(0xFF1B4332),
+                  color: AppColors.primaryOrange,
                 ),
                 title: const Text(
                   'Take a Photo',
@@ -124,14 +125,14 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
 
     if (profileState.hasError && profileState.asData?.value == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: AppColors.appBackground,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.appBackground,
           elevation: 0,
           title: const Text(
             'Profile',
             style: TextStyle(
-              color: Color(0xFF1F2937),
+              color: AppColors.white,
               fontSize: 20,
               fontWeight: FontWeight.bold,
               fontFamily: 'Montserrat',
@@ -148,7 +149,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                   profileState.error.toString(),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    color: Color(0xFF6B7280),
+                    color: AppColors.grey,
                     fontFamily: 'OpenSans',
                   ),
                 ),
@@ -170,14 +171,14 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.appBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.appBackground,
         elevation: 0,
         title: const Text(
           'Profile',
           style: TextStyle(
-            color: Color(0xFF1F2937),
+            color: AppColors.white,
             fontSize: 20,
             fontWeight: FontWeight.bold,
             fontFamily: 'Montserrat',
@@ -199,7 +200,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                         width: 82,
                         height: 82,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1B4332).withValues(alpha: 0.1),
+                          color: AppColors.primaryOrange.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                           image: _profileImage != null
                               ? DecorationImage(
@@ -219,7 +220,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                             ? const Icon(
                                 Icons.person,
                                 size: 42,
-                                color: Color(0xFF1B4332),
+                                color: AppColors.primaryOrange,
                               )
                             : null,
                       ),
@@ -227,7 +228,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                         const Positioned.fill(
                           child: Center(
                             child: CircularProgressIndicator(
-                              color: Color(0xFF1B4332),
+                              color: AppColors.primaryOrange,
                             ),
                           ),
                         )
@@ -261,7 +262,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1F2937),
+                          color: AppColors.white,
                           fontFamily: 'Montserrat',
                         ),
                       ),
@@ -270,7 +271,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                         _formatGoal(user.fitnessGoal),
                         style: const TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF6B7280),
+                          color: AppColors.grey,
                           fontFamily: 'OpenSans',
                         ),
                       ),
@@ -286,8 +287,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                         icon: const Icon(Icons.edit_outlined, size: 16),
                         label: const Text('Edit profile'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF1B4332),
-                          side: const BorderSide(color: Color(0xFF1B4332)),
+                          foregroundColor: AppColors.primaryOrange,
+                          side: const BorderSide(
+                            color: AppColors.primaryOrange,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -330,7 +333,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937),
+                color: AppColors.white,
                 fontFamily: 'Montserrat',
               ),
             ),
@@ -356,14 +359,14 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937),
+                color: AppColors.white,
                 fontFamily: 'Montserrat',
               ),
             ),
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
               ),
@@ -377,7 +380,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                     trailing: const Text(
                       'English',
                       style: TextStyle(
-                        color: Color(0xFF6B7280),
+                        color: AppColors.grey,
                         fontSize: 14,
                         fontFamily: 'OpenSans',
                       ),
@@ -447,7 +450,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       width: (MediaQuery.of(context).size.width - 42) / 2,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
       ),
@@ -461,7 +464,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2937),
+              color: AppColors.white,
               fontFamily: 'Montserrat',
             ),
           ),
@@ -470,7 +473,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
             label,
             style: const TextStyle(
               fontSize: 12,
-              color: Color(0xFF6B7280),
+              color: AppColors.grey,
               fontFamily: 'OpenSans',
             ),
           ),
@@ -502,17 +505,17 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   Widget _buildSettingItem(IconData icon, String title, {Widget? trailing}) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: const Color(0xFF6B7280), size: 22),
+      leading: Icon(icon, color: AppColors.grey, size: 22),
       title: Text(
         title,
         style: const TextStyle(
           fontSize: 15,
-          color: Color(0xFF1F2937),
+          color: AppColors.white,
           fontFamily: 'Montserrat',
         ),
       ),
       trailing:
-          trailing ?? const Icon(Icons.chevron_right, color: Color(0xFF6B7280)),
+          trailing ?? const Icon(Icons.chevron_right, color: AppColors.grey),
     );
   }
 }

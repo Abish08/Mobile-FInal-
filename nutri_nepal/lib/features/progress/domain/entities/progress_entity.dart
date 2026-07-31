@@ -5,16 +5,33 @@ class ProgressPointEntity extends Equatable {
   final DateTime? date;
   final double weight;
   final double calories;
+  final double protein;
+  final double carbs;
+  final double fats;
+  final double duration;
 
   const ProgressPointEntity({
     required this.label,
     required this.date,
     required this.weight,
     required this.calories,
+    this.protein = 0,
+    this.carbs = 0,
+    this.fats = 0,
+    this.duration = 0,
   });
 
   @override
-  List<Object?> get props => [label, date, weight, calories];
+  List<Object?> get props => [
+    label,
+    date,
+    weight,
+    calories,
+    protein,
+    carbs,
+    fats,
+    duration,
+  ];
 }
 
 class ProgressSummaryEntity extends Equatable {

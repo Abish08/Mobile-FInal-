@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nutri_nepal/app/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutri_nepal/core/providers/refresh_provider.dart';
 import 'package:nutri_nepal/features/auth/presentation/view_model/auth_viewmodel.dart';
@@ -94,7 +95,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
     if (_isLoading) {
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF1B4332)),
+          child: CircularProgressIndicator(color: AppColors.primaryOrange),
         ),
       );
     }
@@ -123,16 +124,16 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
         : 0.0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.appBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.appBackground,
         elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
         title: const Text(
           'NutriNepal',
           style: TextStyle(
-            color: Color(0xFF1B4332),
+            color: AppColors.primaryOrange,
             fontSize: 16,
             fontWeight: FontWeight.bold,
             fontFamily: 'Montserrat',
@@ -150,7 +151,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
               Text(
                 'Namaste, $_firstName',
                 style: const TextStyle(
-                  color: Color(0xFF1B4332),
+                  color: AppColors.primaryOrange,
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                   fontFamily: 'Montserrat',
@@ -162,7 +163,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                     ? 'You\'re ${(goalProgress * 100).toStringAsFixed(0)}% towards your food goal today'
                     : 'Complete your health profile to personalize your goals',
                 style: const TextStyle(
-                  color: Color(0xFF6B7280),
+                  color: AppColors.grey,
                   fontSize: 14,
                   fontFamily: 'OpenSans',
                 ),
@@ -225,7 +226,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                     child: _buildQuickAction(
                       Icons.fitness_center_outlined,
                       'Workout',
-                      const Color(0xFF1B4332),
+                      AppColors.primaryOrange,
                       () => widget.onSelectTab?.call(2),
                     ),
                   ),
@@ -247,7 +248,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1F2937),
+                  color: AppColors.white,
                   fontFamily: 'Montserrat',
                 ),
               ),
@@ -269,7 +270,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                 bmi.isFinite && bmi > 0
                     ? 'BMI ${bmi.toStringAsFixed(1)} from your saved profile'
                     : 'Add height and weight to unlock body metrics',
-                const Color(0xFF1B4332),
+                AppColors.primaryOrange,
                 () => widget.onSelectTab?.call(4),
               ),
               const SizedBox(height: 28),
@@ -279,7 +280,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1F2937),
+                  color: AppColors.white,
                   fontFamily: 'Montserrat',
                 ),
               ),
@@ -295,12 +296,12 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
   Widget _buildBMICard(double bmi) {
     final hasValidBmi = bmi.isFinite && bmi > 0;
     final category = hasValidBmi ? _getBMICategory(bmi) : 'Complete profile';
-    final color = hasValidBmi ? _getBMIColor(bmi) : const Color(0xFF6B7280);
+    final color = hasValidBmi ? _getBMIColor(bmi) : AppColors.grey;
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -318,7 +319,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1F2937),
+              color: AppColors.white,
               fontFamily: 'Montserrat',
             ),
           ),
@@ -330,7 +331,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                   'Based on your saved profile details',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF6B7280),
+                    color: AppColors.grey,
                     fontFamily: 'OpenSans',
                   ),
                 ),
@@ -404,12 +405,12 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1B4332), Color(0xFF2D6A4F)],
+          colors: [AppColors.primaryOrange, AppColors.accentOrange],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1B4332).withValues(alpha: 0.2),
+            color: AppColors.primaryOrange.withValues(alpha: 0.2),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -504,7 +505,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
     VoidCallback onTap,
   ) {
     return Material(
-      color: Colors.white,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -523,7 +524,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
               Text(
                 label,
                 style: const TextStyle(
-                  color: Color(0xFF1F2937),
+                  color: AppColors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   fontFamily: 'Montserrat',
@@ -542,7 +543,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
       ),
@@ -589,7 +590,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
               '/ ${goal.toStringAsFixed(0)}g',
               style: const TextStyle(
                 fontSize: 11,
-                color: Color(0xFF6B7280),
+                color: AppColors.grey,
                 fontFamily: 'OpenSans',
               ),
             )
@@ -617,7 +618,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
     VoidCallback onTap,
   ) {
     return Material(
-      color: Colors.white,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -648,7 +649,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1F2937),
+                        color: AppColors.white,
                         fontFamily: 'Montserrat',
                       ),
                     ),
@@ -657,14 +658,14 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                       subtitle,
                       style: const TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF6B7280),
+                        color: AppColors.grey,
                         fontFamily: 'OpenSans',
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Color(0xFF6B7280)),
+              const Icon(Icons.chevron_right, color: AppColors.grey),
             ],
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nutri_nepal/app/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutri_nepal/features/auth/domain/entities/auth_entity.dart';
 import 'package:nutri_nepal/features/admin/presentation/pages/user_detail_screen.dart';
@@ -66,9 +67,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.appBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.appBackground,
         foregroundColor: Colors.black,
         elevation: 0,
         title: const Text(
@@ -88,7 +89,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                 hintText: 'Search members...',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: AppColors.surfaceSoft,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -170,7 +171,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
@@ -193,7 +194,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             label,
             style: const TextStyle(
               fontSize: 12,
-              color: Color(0xFF6B7280),
+              color: AppColors.grey,
               fontFamily: 'OpenSans',
             ),
           ),
@@ -234,7 +235,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
@@ -244,11 +245,11 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
         children: [
           CircleAvatar(
             radius: 24,
-            backgroundColor: const Color(0xFF1B4332).withOpacity(0.1),
+            backgroundColor: AppColors.primaryOrange.withOpacity(0.1),
             child: Text(
               '${user.firstName[0]}${user.lastName[0]}',
               style: const TextStyle(
-                color: Color(0xFF1B4332),
+                color: AppColors.primaryOrange,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -270,10 +271,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                 const SizedBox(height: 2),
                 Text(
                   'Goal: ${user.fitnessGoal ?? 'Not set'}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF6B7280),
-                  ),
+                  style: const TextStyle(fontSize: 12, color: AppColors.grey),
                 ),
                 const SizedBox(height: 4),
                 Container(

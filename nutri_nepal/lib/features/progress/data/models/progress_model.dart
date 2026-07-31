@@ -22,6 +22,10 @@ class ProgressPointModel extends ProgressPointEntity {
     required super.date,
     required super.weight,
     required super.calories,
+    super.protein,
+    super.carbs,
+    super.fats,
+    super.duration,
   });
 
   factory ProgressPointModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +39,10 @@ class ProgressPointModel extends ProgressPointEntity {
       date: date,
       weight: _toFiniteDouble(json['weight']) ?? 0,
       calories: _toFiniteDouble(json['calories']) ?? 0,
+      protein: _toFiniteDouble(json['protein']) ?? 0,
+      carbs: _toFiniteDouble(json['carbs']) ?? 0,
+      fats: _toFiniteDouble(json['fats']) ?? 0,
+      duration: _toFiniteDouble(json['duration']) ?? 0,
     );
   }
 
@@ -49,7 +57,15 @@ class ProgressPointModel extends ProgressPointEntity {
           (item) =>
               ProgressPointModel.fromJson(Map<String, dynamic>.from(item)),
         )
-        .where((point) => point.weight > 0 || point.calories > 0)
+        .where(
+          (point) =>
+              point.weight > 0 ||
+              point.calories > 0 ||
+              point.protein > 0 ||
+              point.carbs > 0 ||
+              point.fats > 0 ||
+              point.duration > 0,
+        )
         .toList();
   }
 }

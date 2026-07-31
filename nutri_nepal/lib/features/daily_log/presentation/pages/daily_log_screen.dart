@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nutri_nepal/app/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutri_nepal/core/providers/refresh_provider.dart';
 import 'package:nutri_nepal/features/daily_log/domain/entities/daily_log_entity.dart';
@@ -146,7 +147,7 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${log.title} removed from log'),
-          backgroundColor: const Color(0xFF1B4332),
+          backgroundColor: AppColors.primaryOrange,
         ),
       );
     } catch (e) {
@@ -168,14 +169,14 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.appBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.appBackground,
         elevation: 0,
         title: const Text(
           'Daily Log',
           style: TextStyle(
-            color: Color(0xFF1F2937),
+            color: AppColors.white,
             fontSize: 20,
             fontWeight: FontWeight.bold,
             fontFamily: 'Montserrat',
@@ -183,14 +184,14 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFF1B4332)),
+            icon: const Icon(Icons.refresh, color: AppColors.primaryOrange),
             onPressed: _loadDailyData,
           ),
         ],
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF1B4332)),
+              child: CircularProgressIndicator(color: AppColors.primaryOrange),
             )
           : _errorMessage != null
           ? _buildErrorState(_errorMessage!)
@@ -206,14 +207,17 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF1B4332), Color(0xFF2D6A4F)],
+                          colors: [
+                            AppColors.primaryOrange,
+                            AppColors.accentOrange,
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(
-                              0xFF1B4332,
-                            ).withValues(alpha: 0.2),
+                            color: AppColors.primaryOrange.withValues(
+                              alpha: 0.2,
+                            ),
                             blurRadius: 15,
                             offset: const Offset(0, 8),
                           ),
@@ -302,7 +306,7 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1F2937),
+                        color: AppColors.white,
                         fontFamily: 'Montserrat',
                       ),
                     ),
@@ -335,7 +339,7 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1F2937),
+                        color: AppColors.white,
                         fontFamily: 'Montserrat',
                       ),
                     ),
@@ -355,7 +359,7 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
                             Icons.fitness_center_outlined,
                             log.title,
                             log.subtitle,
-                            const Color(0xFF1B4332),
+                            AppColors.primaryOrange,
                             onDelete: () => _deleteLog(log, true),
                           ),
                         ),
@@ -405,7 +409,7 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -435,7 +439,7 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1F2937),
+                    color: AppColors.white,
                     fontFamily: 'Montserrat',
                   ),
                 ),
@@ -444,7 +448,7 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
                   subtitle,
                   style: const TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF6B7280),
+                    color: AppColors.grey,
                     fontFamily: 'OpenSans',
                   ),
                 ),
@@ -453,7 +457,7 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
           ),
           PopupMenuButton<String>(
             tooltip: 'Log options',
-            icon: const Icon(Icons.more_vert, color: Color(0xFF6B7280)),
+            icon: const Icon(Icons.more_vert, color: AppColors.grey),
             onSelected: (value) {
               if (value == 'delete') onDelete();
             },
@@ -471,7 +475,7 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -486,7 +490,7 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: Color(0xFF1F2937),
+                    color: AppColors.white,
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
@@ -521,7 +525,7 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
             const Text(
               'Daily log could not load',
               style: TextStyle(
-                color: Color(0xFF1F2937),
+                color: AppColors.white,
                 fontFamily: 'Montserrat',
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
@@ -532,7 +536,7 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Color(0xFF6B7280),
+                color: AppColors.grey,
                 fontFamily: 'OpenSans',
                 fontSize: 12,
               ),
@@ -541,7 +545,7 @@ class _DailyLogScreenState extends ConsumerState<DailyLogScreen> {
             ElevatedButton(
               onPressed: _loadDailyData,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1B4332),
+                backgroundColor: AppColors.primaryOrange,
                 foregroundColor: Colors.white,
               ),
               child: const Text('Retry'),

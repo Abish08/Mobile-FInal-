@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:nutri_nepal/app/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nutri_nepal/features/admin/domain/entities/admin_entity.dart';
@@ -136,9 +137,9 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
   Widget build(BuildContext context) {
     final isEditing = widget.foodData != null;
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.appBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.appBackground,
         foregroundColor: Colors.black,
         elevation: 0,
         title: Text(
@@ -161,9 +162,9 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
               child: Container(
                 height: 150,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: _thumbnailImage != null
                     ? ClipRRect(
@@ -203,9 +204,9 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
                         width: 100,
                         margin: const EdgeInsets.only(right: 8),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.surface,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
+                          border: Border.all(color: AppColors.border),
                         ),
                         child: const Icon(Icons.add, color: Colors.grey),
                       ),
@@ -372,7 +373,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B4332),
+                  backgroundColor: AppColors.primaryOrange,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -413,7 +414,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
         fontSize: 16,
         fontWeight: FontWeight.bold,
         fontFamily: 'Montserrat',
-        color: Color(0xFF1F2937),
+        color: AppColors.white,
       ),
     );
   }
@@ -430,7 +431,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
         labelText: label,
         prefixIcon: Icon(icon, color: color),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.surfaceSoft,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
@@ -444,7 +445,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
       labelText: label,
       prefixIcon: Icon(icon),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: AppColors.surfaceSoft,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
     );
   }

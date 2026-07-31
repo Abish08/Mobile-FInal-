@@ -4,15 +4,45 @@ import 'package:flutter/foundation.dart';
 class ApiEndpoints {
   ApiEndpoints._();
 
-  static const bool isPhysicalDevice = true;
-  static const String _ipAddress = '192.168.101.13';
-  static const int _port = 3000;
+  static const String _physicalDeviceHost = '192.168.1.67';
+  static const String _configuredHost = String.fromEnvironment('API_HOST');
+  static const int _port = int.fromEnvironment(
+    'API_PORT',
+    defaultValue: 3000,
+  );
+  static String? _activeHost;
 
   static String get _host {
-    if (isPhysicalDevice) return _ipAddress;
-    if (kIsWeb || Platform.isIOS) return 'localhost';
-    if (Platform.isAndroid) return '10.0.2.2';
+    if (_activeHost != null) return _activeHost!;
+    if (_configuredHost.isNotEmpty) return _configuredHost;
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+      return 'localhost';
+    }
+    // Mobile builds default to the LAN address so existing physical-device
+    // runs keep working. Emulators override this with API_HOST=10.0.2.2.
+    if (Platform.isAndroid || Platform.isIOS) return _physicalDeviceHost;
     return 'localhost';
+  }
+
+  static String? get fallbackHost {
+    if (kIsWeb) return null;
+    if (_configuredHost == '10.0.2.2') {
+      return _physicalDeviceHost;
+    }
+    if (_configuredHost.isNotEmpty || !Platform.isAndroid) {
+      return null;
+    }
+    if (_host == _physicalDeviceHost) return '10.0.2.2';
+    return null;
+  }
+
+  static String? get fallbackBaseUrl {
+    final host = fallbackHost;
+    return host == null ? null : 'http://$host:$_port/api/v1';
+  }
+
+  static void useHost(String host) {
+    _activeHost = host;
   }
 
   static String get serverUrl => 'http://$_host:$_port';

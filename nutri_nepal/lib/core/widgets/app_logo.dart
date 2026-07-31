@@ -5,11 +5,30 @@ class AppLogo extends StatelessWidget {
 
   final double size;
   final bool showText;
+  final bool fullLogo;
 
-  const AppLogo({super.key, this.size = 34, this.showText = true});
+  const AppLogo({
+    super.key,
+    this.size = 34,
+    this.showText = true,
+    this.fullLogo = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (fullLogo) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: Image.asset(
+          assetPath,
+          fit: BoxFit.contain,
+          errorBuilder: (_, _, _) =>
+              const Icon(Icons.local_florist, color: Color(0xFF1B4332)),
+        ),
+      );
+    }
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

@@ -39,7 +39,7 @@ void main() {
     expect(find.text('Password'), findsOneWidget);
     expect(find.text('Login'), findsOneWidget);
     expect(find.text('Forgot password?'), findsOneWidget);
-    expect(find.text('Sign in with Google'), findsOneWidget);
+    expect(find.text('Login using biometrics'), findsOneWidget);
   });
 
   testWidgets('LoginScreen shows validation message for empty fields', (
@@ -119,15 +119,14 @@ void main() {
     expect(find.text('Create Account'), findsOneWidget);
   });
 
-  testWidgets('LoginScreen exposes an enabled Google sign-in action', (
-    tester,
-  ) async {
+  testWidgets('LoginScreen exposes a biometric login action', (tester) async {
     await tester.pumpWidget(
       const ProviderScope(child: MaterialApp(home: LoginScreen())),
     );
 
     final button = tester.widget<OutlinedButton>(find.byType(OutlinedButton));
     expect(button.onPressed, isNotNull);
-    expect(find.byIcon(Icons.g_mobiledata), findsOneWidget);
+    expect(find.byIcon(Icons.fingerprint), findsOneWidget);
+    expect(find.text('Login using biometrics'), findsOneWidget);
   });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nutri_nepal/app/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutri_nepal/features/admin/domain/entities/admin_entity.dart';
 import 'package:nutri_nepal/features/admin/presentation/pages/add_workout_screen.dart';
@@ -46,9 +47,9 @@ class _WorkoutManagementScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.appBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.appBackground,
         foregroundColor: Colors.black,
         elevation: 0,
         title: const Text(
@@ -128,7 +129,7 @@ class _WorkoutManagementScreenState
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -314,7 +315,7 @@ class _WorkoutManagementScreenState
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
+            style: const TextStyle(fontSize: 10, color: AppColors.grey),
           ),
           const SizedBox(height: 2),
           Text(

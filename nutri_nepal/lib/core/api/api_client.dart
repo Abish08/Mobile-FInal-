@@ -7,10 +7,14 @@ class ApiClient {
   final FlutterSecureStorage _storage;
 
   ApiClient() : _storage = const FlutterSecureStorage() {
-    _dio = Dio(
+    _dio = _createDio(ApiEndpoints.baseUrl);
+  }
+
+  Dio _createDio(String baseUrl) {
+    final dio = Dio(
       BaseOptions(
-        baseUrl: ApiEndpoints.baseUrl,
-        connectTimeout: const Duration(seconds: 30),
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 8),
         receiveTimeout: const Duration(seconds: 30),
         headers: {
           'Content-Type': 'application/json',
@@ -19,8 +23,8 @@ class ApiClient {
       ),
     );
 
-    // Add interceptor to automatically add JWT token
-    _dio.interceptors.add(InterceptorsWrapper(
+    // Add interceptors to automatically add JWT tokens and clear expired ones.
+    dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         final token = await _storage.read(key: 'auth_token');
         if (token != null) {
@@ -36,6 +40,30 @@ class ApiClient {
         return handler.next(error);
       },
     ));
+    return dio;
+  }
+
+  Future<Response> _request(Future<Response> Function(Dio dio) request) async {
+    try {
+      return await request(_dio);
+    } on DioException catch (error) {
+      final fallbackHost = ApiEndpoints.fallbackHost;
+      final canFallback = fallbackHost != null &&
+          error.response == null &&
+          {
+            DioExceptionType.connectionError,
+            DioExceptionType.connectionTimeout,
+            DioExceptionType.sendTimeout,
+            DioExceptionType.receiveTimeout,
+            DioExceptionType.unknown,
+          }.contains(error.type);
+      if (!canFallback) rethrow;
+
+      final fallbackDio = _createDio(ApiEndpoints.fallbackBaseUrl!);
+      final response = await request(fallbackDio);
+      ApiEndpoints.useHost(fallbackHost);
+      return response;
+    }
   }
 
   Dio get dio => _dio;
@@ -52,21 +80,21 @@ class ApiClient {
 
   // GET request
   Future<Response> get(String path, {Map<String, dynamic>? queryParameters}) async {
-    return await _dio.get(path, queryParameters: queryParameters);
+    return _request((dio) => dio.get(path, queryParameters: queryParameters));
   }
 
   // POST request
   Future<Response> post(String path, {dynamic data}) async {
-    return await _dio.post(path, data: data);
+    return _request((dio) => dio.post(path, data: data));
   }
 
   // PUT request
   Future<Response> put(String path, {dynamic data}) async {
-    return await _dio.put(path, data: data);
+    return _request((dio) => dio.put(path, data: data));
   }
 
   // DELETE request
   Future<Response> delete(String path) async {
-    return await _dio.delete(path);
+    return _request((dio) => dio.delete(path));
   }
 }

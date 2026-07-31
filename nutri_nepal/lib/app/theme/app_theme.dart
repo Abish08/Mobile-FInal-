@@ -7,28 +7,31 @@ class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      primaryColor: AppColors.primaryGreen,
-      scaffoldBackgroundColor: AppColors.white,
+      brightness: Brightness.dark,
+      primaryColor: AppColors.primaryOrange,
+      scaffoldBackgroundColor: AppColors.appBackground,
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.primaryGreen,
+        backgroundColor: AppColors.appBackground,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
-          color: Colors.white,
+          color: AppColors.white,
           fontSize: 20,
           fontWeight: FontWeight.bold,
           fontFamily: 'Montserrat',
         ),
       ),
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primaryGreen,
+      colorScheme: const ColorScheme.dark(
+        primary: AppColors.primaryOrange,
         secondary: AppColors.accentOrange,
+        surface: AppColors.surface,
+        error: AppColors.error,
       ),
       fontFamily: 'OpenSans',
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryGreen,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.primaryOrange,
+          foregroundColor: AppColors.white,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -42,7 +45,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primaryGreen,
+          foregroundColor: AppColors.primaryOrange,
           textStyle: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -52,22 +55,28 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.lightGrey,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        fillColor: AppColors.surfaceSoft,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.grey),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.lightGrey),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primaryGreen, width: 2),
+          borderSide: const BorderSide(
+            color: AppColors.primaryOrange,
+            width: 2,
+          ),
         ),
         labelStyle: const TextStyle(
-          color: AppColors.darkGrey,
+          color: AppColors.grey,
           fontFamily: 'OpenSans',
         ),
         hintStyle: const TextStyle(
@@ -76,8 +85,8 @@ class AppTheme {
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Colors.white,
-        selectedItemColor: AppColors.primaryGreen,
+        backgroundColor: AppColors.appBackground,
+        selectedItemColor: AppColors.primaryOrange,
         unselectedItemColor: AppColors.grey,
         elevation: 8,
       ),

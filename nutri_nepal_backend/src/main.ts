@@ -22,7 +22,7 @@ async function bootstrap() {
   await app.listen(port, '0.0.0.0');
 
   console.log(` NutriNepal Backend running on http://localhost:${port}/api/v1`);
-  console.log(`Network access: http://192.168.101.13:${port}/api/v1`);
+  console.log(`Network access: http://192.168.1.67:${port}/api/v1`);
 }
 
 void bootstrap();

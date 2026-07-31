@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nutri_nepal/app/theme/app_colors.dart';
+import 'package:nutri_nepal/core/services/biometric_auth_service.dart';
+import 'package:nutri_nepal/core/widgets/app_logo.dart';
+import 'package:nutri_nepal/features/admin/presentation/pages/admin_dashboard_screen.dart';
 import 'package:nutri_nepal/features/auth/presentation/pages/forgot_password_screen.dart';
 import 'package:nutri_nepal/features/auth/presentation/pages/signup_screen.dart';
-import 'package:nutri_nepal/features/dashboard/presentation/pages/dashboard_screen.dart';
-import 'package:nutri_nepal/features/admin/presentation/pages/admin_dashboard_screen.dart';
 import 'package:nutri_nepal/features/auth/presentation/state/auth_state.dart';
 import 'package:nutri_nepal/features/auth/presentation/view_model/auth_viewmodel.dart';
+import 'package:nutri_nepal/features/dashboard/presentation/pages/dashboard_screen.dart';
 import 'package:nutri_nepal/features/health_profile/presentation/pages/health_onboarding_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -25,7 +28,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _hasNavigated = false;
     super.dispose();
   }
 
@@ -34,12 +36,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showMessage('Please fill all fields', AppColors.error);
       return;
     }
 
@@ -48,97 +45,103 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         .login(email: email, password: password);
   }
 
+  Future<void> _handleBiometricLogin() async {
+    final biometricService = ref.read(biometricAuthServiceProvider);
+    final canUseBiometrics = await biometricService
+        .canUseBiometricsForSavedSession();
+
+    if (!mounted) return;
+    if (!canUseBiometrics) {
+      _showMessage(
+        'Login once with email and password before using biometrics.',
+        AppColors.warning,
+      );
+      return;
+    }
+
+    final authenticated = await biometricService.authenticate();
+    if (!mounted) return;
+
+    if (authenticated) {
+      await ref.read(authViewModelProvider.notifier).getCurrentUser();
+    }
+  }
+
+  void _showMessage(String message, Color color) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
+  }
+
+  void _navigateForUser(AuthState next) {
+    if (next.status != AuthStatus.authenticated ||
+        next.user == null ||
+        _hasNavigated) {
+      return;
+    }
+
+    _hasNavigated = true;
+    final user = next.user!;
+
+    if (user.role == 'admin') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+      );
+    } else if (user.age == null || user.weight == null || user.height == null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HealthOnboardingScreen()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
 
     ref.listen<AuthState>(authViewModelProvider, (previous, next) {
-      if (next.status == AuthStatus.authenticated &&
-          next.user != null &&
-          !_hasNavigated) {
-        _hasNavigated = true;
-
-        final user = next.user!;
-        if (user.role == 'admin') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AdminDashboardScreen(),
-            ),
-          );
-        } else if (user.age == null ||
-            user.weight == null ||
-            user.height == null) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const HealthOnboardingScreen(),
-            ),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const DashboardScreen()),
-          );
-        }
-      } else if (next.status == AuthStatus.error && next.message != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.message!), backgroundColor: Colors.red),
-        );
+      _navigateForUser(next);
+      if (next.status == AuthStatus.error && next.message != null) {
+        _showMessage(next.message!, AppColors.error);
       }
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              const SizedBox(height: 40),
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1B4332),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(
-                  Icons.local_florist,
-                  color: Colors.white,
-                  size: 40,
-                ),
-              ),
+              const SizedBox(height: 36),
+              const AppLogo(fullLogo: true, size: 132),
               const SizedBox(height: 24),
-              const Text(
-                'NutriNepal',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1B4332),
-                  fontFamily: 'Montserrat',
-                ),
-              ),
-              const SizedBox(height: 8),
               const Text(
                 'Your Journey Begins Here',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Color(0xFF6B7280),
+                  color: AppColors.grey,
                   fontFamily: 'OpenSans',
                 ),
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 44),
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.border),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
+                      color: AppColors.primaryOrange.withOpacity(0.08),
+                      blurRadius: 22,
+                      offset: const Offset(0, 12),
                     ),
                   ],
                 ),
@@ -150,70 +153,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1F2937),
+                        color: AppColors.white,
                         fontFamily: 'Montserrat',
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Email Address',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF1F2937),
-                        fontFamily: 'Montserrat',
-                      ),
-                    ),
+                    _fieldLabel('Email Address'),
                     const SizedBox(height: 8),
-                    TextField(
+                    _buildTextField(
                       controller: _emailController,
+                      hintText: 'abish@gmail.com',
+                      icon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        hintText: 'abish@gmail.com',
-                        filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        prefixIcon: const Icon(Icons.email_outlined),
-                      ),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
-                      'Password',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF1F2937),
-                        fontFamily: 'Montserrat',
-                      ),
-                    ),
+                    _fieldLabel('Password'),
                     const SizedBox(height: 8),
-                    TextField(
+                    _buildTextField(
                       controller: _passwordController,
+                      hintText: 'Enter password',
+                      icon: Icons.lock_outline,
                       obscureText: _obscurePassword,
-                      decoration: InputDecoration(
-                        hintText: '••••••••',
-                        filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: AppColors.grey,
                         ),
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
                       ),
                     ),
                     Align(
@@ -231,7 +203,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: const Text('Forgot password?'),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -239,8 +211,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ? null
                             : _handleLogin,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFB85C00),
-                          foregroundColor: Colors.white,
+                          backgroundColor: AppColors.primaryOrange,
+                          foregroundColor: AppColors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -252,9 +224,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
+                                  color: AppColors.white,
                                 ),
                               )
                             : const Row(
@@ -285,7 +255,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const Text(
                     "Don't have an account? ",
                     style: TextStyle(
-                      color: Color(0xFF6B7280),
+                      color: AppColors.grey,
                       fontFamily: 'OpenSans',
                     ),
                   ),
@@ -301,7 +271,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: const Text(
                       'Register',
                       style: TextStyle(
-                        color: Color(0xFF1B4332),
+                        color: AppColors.primaryOrange,
                         fontWeight: FontWeight.w600,
                         fontFamily: 'Montserrat',
                       ),
@@ -310,37 +280,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              Row(
+              const Row(
                 children: [
-                  Expanded(child: Divider(color: Colors.grey[300])),
-                  const Padding(
+                  Expanded(child: Divider(color: AppColors.border)),
+                  Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'OR',
-                      style: TextStyle(color: Color(0xFF6B7280)),
-                    ),
+                    child: Text('OR', style: TextStyle(color: AppColors.grey)),
                   ),
-                  Expanded(child: Divider(color: Colors.grey[300])),
+                  Expanded(child: Divider(color: AppColors.border)),
                 ],
               ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: authState.status == AuthStatus.loading
+                      ? null
+                      : _handleBiometricLogin,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: Colors.grey),
+                    side: const BorderSide(color: AppColors.primaryOrange),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  icon: const Icon(Icons.g_mobiledata, size: 24),
+                  icon: const Icon(
+                    Icons.fingerprint,
+                    size: 24,
+                    color: AppColors.primaryOrange,
+                  ),
                   label: const Text(
-                    'Sign in with Google',
+                    'Login using biometrics',
                     style: TextStyle(
-                      color: Color(0xFF1F2937),
+                      color: AppColors.white,
                       fontFamily: 'Montserrat',
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -348,6 +322,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _fieldLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: AppColors.white,
+        fontFamily: 'Montserrat',
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData icon,
+    TextInputType? keyboardType,
+    bool obscureText = false,
+    Widget? suffixIcon,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      style: const TextStyle(color: AppColors.white),
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: const TextStyle(color: AppColors.grey),
+        filled: true,
+        fillColor: AppColors.surfaceSoft,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        prefixIcon: Icon(icon, color: AppColors.primaryOrange),
+        suffixIcon: suffixIcon,
       ),
     );
   }

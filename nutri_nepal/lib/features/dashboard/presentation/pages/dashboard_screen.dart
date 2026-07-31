@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nutri_nepal/app/theme/app_colors.dart';
 import 'package:nutri_nepal/core/providers/refresh_provider.dart';
 import 'package:nutri_nepal/features/dashboard/presentation/pages/user_dashboard_screen.dart';
 import 'package:nutri_nepal/features/daily_log/presentation/pages/daily_log_screen.dart';
@@ -43,9 +44,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         currentIndex: _selectedIndex,
         onTap: _selectTab,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF1B4332),
-        unselectedItemColor: const Color(0xFF9CA3AF),
-        backgroundColor: Colors.white,
+        selectedItemColor: AppColors.primaryOrange,
+        unselectedItemColor: AppColors.grey,
+        backgroundColor: AppColors.appBackground,
         elevation: 12,
         selectedFontSize: 11,
         unselectedFontSize: 10,

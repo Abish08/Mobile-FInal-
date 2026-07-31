@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:nutri_nepal/app/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nutri_nepal/features/admin/domain/entities/admin_entity.dart';
@@ -129,9 +130,9 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
   Widget build(BuildContext context) {
     final isEditing = widget.workoutData != null;
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.appBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.appBackground,
         foregroundColor: Colors.black,
         elevation: 0,
         title: Text(
@@ -267,9 +268,9 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
               child: Container(
                 height: 150,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: _thumbnailImage != null
                     ? ClipRRect(
@@ -309,9 +310,9 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
                         width: 100,
                         margin: const EdgeInsets.only(right: 8),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.surface,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
+                          border: Border.all(color: AppColors.border),
                         ),
                         child: const Icon(Icons.add, color: Colors.grey),
                       ),
@@ -401,7 +402,7 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
         fontSize: 16,
         fontWeight: FontWeight.bold,
         fontFamily: 'Montserrat',
-        color: Color(0xFF1F2937),
+        color: AppColors.white,
       ),
     );
   }

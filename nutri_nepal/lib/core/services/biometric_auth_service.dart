@@ -28,20 +28,28 @@ class BiometricAuthService {
   }
 
   Future<bool> canAuthenticateWithBiometrics() async {
-    final supported = await _auth.isDeviceSupported();
-    final canCheck = await _auth.canCheckBiometrics;
-    final biometrics = await _auth.getAvailableBiometrics();
+    try {
+      final supported = await _auth.isDeviceSupported();
+      final canCheck = await _auth.canCheckBiometrics;
+      final biometrics = await _auth.getAvailableBiometrics();
 
-    return supported && canCheck && biometrics.isNotEmpty;
+      return supported && canCheck && biometrics.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
   }
 
-  Future<bool> authenticate() {
-    return _auth.authenticate(
-      localizedReason: 'Use biometrics to unlock NutriNepal',
-      options: const AuthenticationOptions(
-        biometricOnly: true,
-        stickyAuth: true,
-      ),
-    );
+  Future<bool> authenticate() async {
+    try {
+      return _auth.authenticate(
+        localizedReason: 'Use biometrics to unlock NutriNepal',
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          stickyAuth: true,
+        ),
+      );
+    } catch (_) {
+      return false;
+    }
   }
 }

@@ -50,25 +50,27 @@ export class ProgressController {
     @Query('days') days?: string,
   ) {
     const parsedDays = days ? Number(days) : 30;
-    const history = await this.progressService.findHistory(
+    const history = await this.progressService.getCalorieHistory(
       user._id.toString(),
       Number.isFinite(parsedDays) ? parsedDays : 30,
     );
 
-    return {
-      success: true,
-      data: history.map((item) => ({
-        _id: item.date.toISOString().substring(0, 10),
-        calories: item.weight,
-        weight: item.weight,
-        date: item.date,
-      })),
-    };
+    return { success: true, data: history };
   }
 
   @Get('history/workouts')
-  getWorkoutHistory() {
-    return { success: true, data: [] };
+  async getWorkoutHistory(
+    @CurrentUser() user: UserDocument,
+    @Query('days') days?: string,
+  ) {
+    const parsedDays = days ? Number(days) : 30;
+    return {
+      success: true,
+      data: await this.progressService.getWorkoutHistory(
+        user._id.toString(),
+        Number.isFinite(parsedDays) ? parsedDays : 30,
+      ),
+    };
   }
 
   @Get('summary')

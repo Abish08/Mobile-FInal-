@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nutri_nepal/app/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:nutri_nepal/features/auth/presentation/view_model/auth_viewmodel.dart';
@@ -91,7 +92,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
       case 'strength':
         return const Color(0xFFB85C00);
       case 'cardio':
-        return const Color(0xFF1B4332);
+        return AppColors.primaryOrange;
       case 'flexibility':
       case 'yoga':
         return Colors.purple;
@@ -125,7 +126,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('${workout.name} logged successfully!'),
-              backgroundColor: const Color(0xFF1B4332),
+              backgroundColor: AppColors.primaryOrange,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -154,16 +155,16 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.appBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.appBackground,
         elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
         title: const Text(
           'Workouts',
           style: TextStyle(
-            color: Color(0xFF1F2937),
+            color: AppColors.white,
             fontSize: 20,
             fontWeight: FontWeight.bold,
             fontFamily: 'Montserrat',
@@ -171,14 +172,14 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFF1B4332)),
+            icon: const Icon(Icons.refresh, color: AppColors.primaryOrange),
             onPressed: _fetchWorkouts,
           ),
         ],
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF1B4332)),
+              child: CircularProgressIndicator(color: AppColors.primaryOrange),
             )
           : _errorMessage != null
           ? _buildErrorWorkoutState(_errorMessage!)
@@ -214,13 +215,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? const Color(0xFF1B4332)
+                                ? AppColors.primaryOrange
                                 : Colors.white,
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
                               color: isSelected
-                                  ? const Color(0xFF1B4332)
-                                  : Colors.grey.shade300,
+                                  ? AppColors.primaryOrange
+                                  : AppColors.border,
                               width: 1.5,
                             ),
                           ),
@@ -233,7 +234,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                                   style: TextStyle(
                                     color: isSelected
                                         ? Colors.white
-                                        : const Color(0xFF6B7280),
+                                        : AppColors.grey,
                                     fontSize: 13,
                                     fontWeight: isSelected
                                         ? FontWeight.w600
@@ -247,7 +248,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                                   style: TextStyle(
                                     color: isSelected
                                         ? Colors.white70
-                                        : const Color(0xFF9CA3AF),
+                                        : AppColors.grey,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                     fontFamily: 'Montserrat',
@@ -295,7 +296,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               child: Text(
                 'Today\'s Strength Session',
                 style: TextStyle(
-                  color: Color(0xFF1B4332),
+                  color: AppColors.primaryOrange,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   fontFamily: 'Montserrat',
@@ -305,13 +306,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color(0xFFE7F6EE),
+                color: AppColors.surfaceSoft,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: const Text(
                 'ACTIVE',
                 style: TextStyle(
-                  color: Color(0xFF1B4332),
+                  color: AppColors.primaryOrange,
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   fontFamily: 'Montserrat',
@@ -324,7 +325,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
         Text(
           '$activeCount workouts ready. Choose a focus and log your session.',
           style: const TextStyle(
-            color: Color(0xFF6B7280),
+            color: AppColors.grey,
             fontSize: 13,
             height: 1.4,
             fontFamily: 'OpenSans',
@@ -345,7 +346,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -448,7 +449,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                           style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF1F2937),
+                            color: AppColors.white,
                             fontFamily: 'Montserrat',
                           ),
                         ),
@@ -469,7 +470,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF6B7280),
+                        color: AppColors.grey,
                         fontFamily: 'OpenSans',
                       ),
                     ),
@@ -496,7 +497,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                         _buildStatChip(
                           Icons.timer_outlined,
                           'Rest ${workout.rest}',
-                          const Color(0xFF6B7280),
+                          AppColors.grey,
                         ),
                     ],
                   ),
@@ -526,8 +527,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                         child: OutlinedButton(
                           onPressed: () => _showWorkoutDetails(workout),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF1B4332),
-                            side: const BorderSide(color: Color(0xFF1B4332)),
+                            foregroundColor: AppColors.primaryOrange,
+                            side: const BorderSide(
+                              color: AppColors.primaryOrange,
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -577,7 +580,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
       child: const Icon(
         Icons.fitness_center_outlined,
         size: 64,
-        color: Color(0xFF1B4332),
+        color: AppColors.primaryOrange,
       ),
     );
   }
@@ -618,12 +621,12 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1B4332).withValues(alpha: 0.08),
+                color: AppColors.primaryOrange.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Icon(
                 Icons.fitness_center_outlined,
-                color: Color(0xFF1B4332),
+                color: AppColors.primaryOrange,
                 size: 34,
               ),
             ),
@@ -631,7 +634,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             const Text(
               'No workouts found',
               style: TextStyle(
-                color: Color(0xFF1F2937),
+                color: AppColors.white,
                 fontWeight: FontWeight.w700,
                 fontFamily: 'Montserrat',
               ),
@@ -641,7 +644,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               'Try another focus or refresh the catalog.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Color(0xFF6B7280),
+                color: AppColors.grey,
                 fontSize: 13,
                 fontFamily: 'OpenSans',
               ),
@@ -664,7 +667,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             const Text(
               'Workouts could not load',
               style: TextStyle(
-                color: Color(0xFF1F2937),
+                color: AppColors.white,
                 fontWeight: FontWeight.w700,
                 fontFamily: 'Montserrat',
               ),
@@ -674,7 +677,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Color(0xFF6B7280),
+                color: AppColors.grey,
                 fontSize: 13,
                 fontFamily: 'OpenSans',
               ),
@@ -683,7 +686,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             ElevatedButton(
               onPressed: _fetchWorkouts,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1B4332),
+                backgroundColor: AppColors.primaryOrange,
                 foregroundColor: Colors.white,
               ),
               child: const Text('Retry'),
@@ -697,7 +700,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   void _showWorkoutDetails(UserWorkout workout) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBackground,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -712,7 +715,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: AppColors.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -721,7 +724,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             Text(
               workout.name,
               style: const TextStyle(
-                color: Color(0xFF1F2937),
+                color: AppColors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'Montserrat',
@@ -731,7 +734,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             Text(
               '${workout.category} - ${workout.difficulty ?? 'General'}',
               style: const TextStyle(
-                color: Color(0xFF6B7280),
+                color: AppColors.grey,
                 fontFamily: 'OpenSans',
               ),
             ),
@@ -799,14 +802,14 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           Text(
             label,
             style: const TextStyle(
-              color: Color(0xFF6B7280),
+              color: AppColors.grey,
               fontFamily: 'OpenSans',
             ),
           ),
           Text(
             value,
             style: const TextStyle(
-              color: Color(0xFF1F2937),
+              color: AppColors.white,
               fontWeight: FontWeight.w700,
               fontFamily: 'Montserrat',
             ),

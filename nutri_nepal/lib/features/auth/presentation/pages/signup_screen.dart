@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:nutri_nepal/app/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nutri_nepal/core/widgets/app_logo.dart';
 import 'package:nutri_nepal/features/auth/presentation/pages/login_screen.dart';
 import 'package:nutri_nepal/features/auth/presentation/state/auth_state.dart';
 import 'package:nutri_nepal/features/auth/presentation/view_model/auth_viewmodel.dart';
@@ -38,7 +40,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please agree to the Terms & Conditions'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -59,7 +61,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please fill all fields'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -69,7 +71,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Passwords do not match'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -79,13 +81,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Password must be at least 6 characters'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
     }
-
-    // ✅ Pass ALL 5 parameters (as defined in the use case)
     ref
         .read(authViewModelProvider.notifier)
         .register(
@@ -106,63 +106,38 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Registration successful! Please login.'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
-      }
-      // ✅ CHANGE: errorMessage → message
-      else if (next.status == AuthStatus.error && next.message != null) {
+      } else if (next.status == AuthStatus.error && next.message != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            // ✅ CHANGE: errorMessage → message
             content: Text(next.message!),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.appBackground,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
               const SizedBox(height: 20),
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1B4332),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.local_florist,
-                  color: Colors.white,
-                  size: 36,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'NutriNepal',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1B4332),
-                  fontFamily: 'Montserrat',
-                ),
-              ),
+              const AppLogo(fullLogo: true, size: 132),
               const SizedBox(height: 8),
               const Text(
                 'Empowering your journey to professional wellness',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF6B7280),
+                  color: AppColors.grey,
                   fontFamily: 'OpenSans',
                 ),
                 textAlign: TextAlign.center,
@@ -171,8 +146,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.border),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.05),
@@ -189,7 +165,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1F2937),
+                        color: AppColors.white,
                         fontFamily: 'Montserrat',
                       ),
                     ),
@@ -198,33 +174,36 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       'Join our health community today',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF6B7280),
+                        color: AppColors.grey,
                         fontFamily: 'OpenSans',
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // ✅ CHANGE: First Name + Last Name fields
                     const Text(
                       'First Name',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF1F2937),
+                        color: AppColors.white,
                         fontFamily: 'Montserrat',
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
+                      style: const TextStyle(color: AppColors.white),
                       controller: _firstNameController,
                       decoration: InputDecoration(
                         hintText: 'Abish',
                         filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
+                        fillColor: AppColors.surfaceSoft,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        prefixIcon: const Icon(Icons.person_outline),
+                        prefixIcon: const Icon(
+                          Icons.person_outline,
+                          color: AppColors.primaryOrange,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -233,22 +212,26 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF1F2937),
+                        color: AppColors.white,
                         fontFamily: 'Montserrat',
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
+                      style: const TextStyle(color: AppColors.white),
                       controller: _lastNameController,
                       decoration: InputDecoration(
                         hintText: 'Khanal',
                         filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
+                        fillColor: AppColors.surfaceSoft,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        prefixIcon: const Icon(Icons.person_outline),
+                        prefixIcon: const Icon(
+                          Icons.person_outline,
+                          color: AppColors.primaryOrange,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -257,23 +240,27 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF1F2937),
+                        color: AppColors.white,
                         fontFamily: 'Montserrat',
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
+                      style: const TextStyle(color: AppColors.white),
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
                         hintText: 'hello@nutrinepal.com',
                         filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
+                        fillColor: AppColors.surfaceSoft,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        prefixIcon: const Icon(Icons.email_outlined),
+                        prefixIcon: const Icon(
+                          Icons.email_outlined,
+                          color: AppColors.primaryOrange,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -282,23 +269,27 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF1F2937),
+                        color: AppColors.white,
                         fontFamily: 'Montserrat',
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
+                      style: const TextStyle(color: AppColors.white),
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
                         hintText: '9800000000',
                         filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
+                        fillColor: AppColors.surfaceSoft,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        prefixIcon: const Icon(Icons.phone_outlined),
+                        prefixIcon: const Icon(
+                          Icons.phone_outlined,
+                          color: AppColors.primaryOrange,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -307,28 +298,33 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF1F2937),
+                        color: AppColors.white,
                         fontFamily: 'Montserrat',
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
+                      style: const TextStyle(color: AppColors.white),
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
-                        hintText: '••••••••',
+                        hintText: 'Password',
                         filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
+                        fillColor: AppColors.surfaceSoft,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        prefixIcon: const Icon(Icons.lock_outline),
+                        prefixIcon: const Icon(
+                          Icons.lock_outline,
+                          color: AppColors.primaryOrange,
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
+                            color: AppColors.grey,
                           ),
                           onPressed: () {
                             setState(() {
@@ -344,28 +340,33 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF1F2937),
+                        color: AppColors.white,
                         fontFamily: 'Montserrat',
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
+                      style: const TextStyle(color: AppColors.white),
                       controller: _confirmPasswordController,
                       obscureText: _obscureConfirmPassword,
                       decoration: InputDecoration(
-                        hintText: '••••••••',
+                        hintText: 'Password',
                         filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
+                        fillColor: AppColors.surfaceSoft,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        prefixIcon: const Icon(Icons.lock_outline),
+                        prefixIcon: const Icon(
+                          Icons.lock_outline,
+                          color: AppColors.primaryOrange,
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscureConfirmPassword
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
+                            color: AppColors.grey,
                           ),
                           onPressed: () {
                             setState(() {
@@ -386,7 +387,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               _agreeToTerms = value ?? false;
                             });
                           },
-                          activeColor: const Color(0xFF1B4332),
+                          activeColor: AppColors.primaryOrange,
                         ),
                         Expanded(
                           child: GestureDetector(
@@ -399,7 +400,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               TextSpan(
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Color(0xFF6B7280),
+                                  color: AppColors.grey,
                                   fontFamily: 'OpenSans',
                                 ),
                                 children: [
@@ -407,7 +408,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   TextSpan(
                                     text: 'Terms of Service',
                                     style: TextStyle(
-                                      color: Color(0xFFB85C00),
+                                      color: AppColors.primaryOrange,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -426,8 +427,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             ? null
                             : _handleSignup,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFB85C00),
-                          foregroundColor: Colors.white,
+                          backgroundColor: AppColors.primaryOrange,
+                          foregroundColor: AppColors.white,
                           disabledBackgroundColor: Colors.grey[300],
                           disabledForegroundColor: Colors.grey[500],
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -442,7 +443,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
+                                    AppColors.white,
                                   ),
                                 ),
                               )
@@ -474,7 +475,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   const Text(
                     'Already have an account? ',
                     style: TextStyle(
-                      color: Color(0xFF6B7280),
+                      color: AppColors.grey,
                       fontFamily: 'OpenSans',
                     ),
                   ),
@@ -490,7 +491,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     child: const Text(
                       'Login',
                       style: TextStyle(
-                        color: Color(0xFF1B4332),
+                        color: AppColors.primaryOrange,
                         fontWeight: FontWeight.w600,
                         fontFamily: 'Montserrat',
                       ),
@@ -500,10 +501,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ),
               const SizedBox(height: 24),
               const Text(
-                '© 2024 NutriNepal Health Solutions',
+                '2024 NutriNepal Health Solutions',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Color(0xFF6B7280),
+                  color: AppColors.grey,
                   fontFamily: 'OpenSans',
                 ),
               ),
